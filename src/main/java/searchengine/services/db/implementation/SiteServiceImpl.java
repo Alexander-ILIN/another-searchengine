@@ -1,7 +1,7 @@
 package searchengine.services.db.implementation;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import searchengine.model.dao.standard_crud.SiteRepository;
 import searchengine.model.entity.Site;
 import searchengine.services.db.SiteService;
@@ -11,7 +11,7 @@ import java.util.List;
  * класс, реализующий запуск операций с сайтами в БД
  * для запуска операций используется интерфейс SiteRepository
  */
-@Component
+@Service
 class SiteServiceImpl implements SiteService
 {
     SiteRepository siteRepository;

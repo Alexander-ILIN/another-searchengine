@@ -1,7 +1,7 @@
 package searchengine.services.db.implementation;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import searchengine.model.dao.non_standard_operations.LemmaNonStandardRepository;
 import searchengine.model.dao.standard_crud.LemmaRepository;
 import searchengine.model.entity.Lemma;
@@ -15,7 +15,7 @@ import java.util.Map;
  * класс, реализующий запуск операций с леммами в БД
  * для запуска операций используются интерфейсы LemmaRepository и LemmaNonStandardRepository
  */
-@Component
+@Service
 class LemmaServiceImpl implements LemmaService
 {
     private LemmaNonStandardRepository lemmaNonStandardRepository;

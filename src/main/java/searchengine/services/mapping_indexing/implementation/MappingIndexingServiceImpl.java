@@ -3,7 +3,7 @@ package searchengine.services.mapping_indexing.implementation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import searchengine.config.Config;
 import searchengine.model.entity.Page;
 import searchengine.model.entity.Site;
@@ -22,7 +22,7 @@ import java.util.concurrent.ForkJoinPool;
 /**
  * класс, используемый для получения карты сайта и запуска индексации
  */
-@Component
+@Service
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 class MappingIndexingServiceImpl implements MappingIndexingService, SiteMappingService
 {

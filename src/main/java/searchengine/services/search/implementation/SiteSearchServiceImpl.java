@@ -2,7 +2,7 @@ package searchengine.services.search.implementation;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import searchengine.dto.response.Response;
 import searchengine.dto.response.ResponseFail;
 import searchengine.dto.response.ResponseSearch;
@@ -15,7 +15,7 @@ import java.io.IOException;
 /**
  * класс, реализующий получение ответа на поисковый запрос от пользователя
  */
-@Component
+@Service
 class SiteSearchServiceImpl implements SiteSearchService
 {
     SearchResultService searchResultService; // объект, осуществляющий выполнение поискового запроса

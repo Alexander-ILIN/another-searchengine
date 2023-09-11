@@ -3,9 +3,8 @@ package searchengine.services.lemmas.implementation;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.english.EnglishLuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import searchengine.services.lemmas.LemmasProcessingService;
-
 import java.io.IOException;
 import java.util.*;
 
@@ -15,7 +14,7 @@ import java.util.*;
  *  2. лемм всех слов из заданного текста;
  *  3. лемм заданного слова;
  */
-@Component
+@Service
 class LemmasProcessingServiceImpl implements LemmasProcessingService
 {
     private LuceneMorphology russianLuceneMorphology;

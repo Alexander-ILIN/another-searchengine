@@ -1,19 +1,18 @@
 package searchengine.services.db.implementation;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import searchengine.model.dao.non_standard_operations.PageNonStandardRepository;
 import searchengine.model.dao.standard_crud.PageRepository;
 import searchengine.model.entity.Page;
 import searchengine.services.db.PageService;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * класс, реализующий запуск операций со страницами в БД
  * для запуска операций используются интерфейсы PageRepository и PageNonStandardRepository
  */
-@Component
+@Service
 class PageServiceImpl implements PageService
 {
     private PageRepository pageRepository;

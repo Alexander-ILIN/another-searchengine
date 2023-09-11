@@ -3,7 +3,7 @@ package searchengine.services.search.implementation;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import searchengine.config.Config;
 import searchengine.dto.search_result.SearchResultData;
 import searchengine.model.entity.*;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 /**
  * класс, реализующий выполнение поискового запроса пользователя
  */
-@Component
+@Service
 class SearchResultServiceImpl implements SearchResultService
 {
     private final LemmasProcessingService lemmasProcessingService; // лемматизатор

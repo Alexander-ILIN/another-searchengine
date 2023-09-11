@@ -1,7 +1,7 @@
 package searchengine.services.db.implementation;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import searchengine.model.dao.non_standard_operations.SearchIndexNonStandardRepository;
 import searchengine.model.dao.standard_crud.SearchIndexRepository;
 import searchengine.model.entity.SearchIndex;
@@ -13,7 +13,7 @@ import java.util.Map;
  * класс, реализующий запуск операций с индексами страниц в БД
  * для запуска операций используются интерфейсы SearchIndexRepository и SearchIndexNonStandardRepository
  */
-@Component
+@Service
 class SearchIndexServiceImpl implements SearchIndexService
 {
     private SearchIndexRepository searchIndexRepository;

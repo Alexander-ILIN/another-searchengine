@@ -27,6 +27,7 @@ public class Statistics
     /**
      * класс, использующийся для хранения статистики по всем сайтам
      */
+    @Getter
     public class Total
     {
         private final long sites; // общее количество сайтов

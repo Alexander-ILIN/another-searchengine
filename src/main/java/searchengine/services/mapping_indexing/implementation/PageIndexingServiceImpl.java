@@ -4,7 +4,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import searchengine.config.Config;
 import searchengine.model.entity.Lemma;
 import searchengine.model.entity.Page;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 /**
  * класс, использующийся для индексации страниц и сохранения информации о леммах и индксах
  */
-@Component
+@Service
 @Scope("prototype")
 class PageIndexingServiceImpl implements PageIndexingService
 {

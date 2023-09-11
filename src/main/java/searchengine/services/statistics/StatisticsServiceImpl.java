@@ -2,7 +2,7 @@ package searchengine.services.statistics;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import searchengine.dto.response.Response;
 import searchengine.dto.response.ResponseFail;
 import searchengine.dto.response.ResponseStatistics;
@@ -17,7 +17,7 @@ import searchengine.services.db.SiteService;
 /**
  * класс, использующийся для сбора статистики по индексации сайтов: общей и по каждому сайту
  */
-@Component
+@Service
 class StatisticsServiceImpl implements StatisticsService
 {
     private final SiteService siteService;
