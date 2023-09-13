@@ -175,3 +175,67 @@
 
 ---  
 
+
+###  Конфигурационный файл (application.yaml)
+Конфигурационный файл содержит:  
+
+-  пользовательские переменные - `indexing-settings`:
+
+   -  перечень сайтов, которые необходимо индексировать - `sites`; для каждого сайта задаются адрес - `url` и имя - `name`;
+  
+-  пользовательские переменные - `indexing-config`:
+
+   -  имя user-agent, который необходимо подставлять при запросах страниц сайтов - `userAgent`;
+   -  referrer, который необходимо подставлять при запросах страниц сайтов - `referrer`;
+   -  размер буфера, использующегося при сохранении страниц - `pageBufferSize`;
+   -  размер буфера, использующегося при сохранении лемм - `lemmaBufferSize`;
+   -  размер буфера, использующегося при сохранении поисковых индексов - `indexBufferSize`;
+   -  пороговое значение коэффициента встречаемости леммы на сайте - `lemmaOccurrenceLimit`;
+   
+-  свойства подключения к базе данных: хост, порт, имя базы - `spring:datasource:url`;
+-  свойства подключения к базе данных: логин - `spring:datasource:username`;
+-  свойства подключения к базе данных: пароль - `spring:datasource:password`;
+-  диалект Hibernate - `spring:jpa:properties:hibernate:dialect`;
+-  режим управления структурой базы данных - `spring:jpa:hibernate:ddl-auto`.
+
+Пример заполненного файла application.yaml:  
+
+    # Перечень сайтов
+    indexing-settings:
+      sites:
+        - url: https://www.svetlovka.ru/
+          name: Библиотека имени М. А. Светлова
+        - url: https://prestonparkmuseum.co.uk/
+          name: Preston park
+        - url: https://ipfran.ru/
+          name: Институт прикладной физики им. А.В. Гапонова-Грехова
+
+    indexing-config:
+      # Свойства User Agent
+      userAgent: another search engine bot
+      referrer: http://www.google.com
+      # Размер буферов для сохранения в БД
+      pageBufferSize: 100
+      lemmaBufferSize: 1000
+      indexBufferSize: 5000
+
+      # Пороговое значение коэффициента встречаемости леммы на сайте - значение при котором лемма исключается из поиска
+      # коэффициента встречаемости леммы на сайте = количество страниц, на которых встречается лемма / общее число страниц на сайте
+      lemmaOccurrenceLimit: 0.75
+
+    # Свойства подключения к БД
+    spring:
+      datasource:
+        url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
+        username: bestuser
+        password: bestuser
+
+      jpa:
+        properties:
+          hibernate:
+            dialect: org.hibernate.dialect.MySQL8Dialect
+        hibernate:
+          ddl-auto: none
+    
+---   
+
