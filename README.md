@@ -273,4 +273,32 @@
 
         git clone https://github.com/Alexander-ILIN/another-searchengine.git
 
-2.  открыть проект `File --> Open ...`
+2.  открыть проект `File --> Open ...`  
+
+    ![OPEN_PROJECT](/images/OpenProject.png)
+
+3.  запустить команду `package` у корневого Maven-проекта `AnotherSearchEngine`, либо в командной строке в корне проекта выполнить команду:  
+
+        mvn package  
+
+    ![PACKAGE](/images/MavenPackage.png)
+
+4.  убедиться, что сборка прошла успешно:  
+
+    ![BUILD_SUCCESS](/images/BuildSuccess.png)
+
+5. скопировать в одну папку получившийся `.jar` файл из папки `target`, а также файл `application.yaml` из корневой папки проекта:  
+
+    ![COPY_TO_FOLDER](/images/CopyToFolder.png)
+
+6. создать новую схему в базе данных (при необходимости):  
+
+    ![DB_SCHEMA](/images/DbSchema.png)
+
+7. заполнить параметры файла `application.yaml`:  
+
+    ![PROPERTIES](/images/Properties.png)
+
+   перед первым запуском необходимо установить свойство (данный шаг можно пропустить, если таблицы в базе данных будут создаваться вручную):
+
+        spring.jpa.hibernate.ddl-auto: create
