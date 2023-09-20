@@ -265,3 +265,12 @@
    - page_id INT NOT NULL — идентификатор страницы;
    - lemma_id INT NOT NULL — идентификатор леммы;
    - rank FLOAT NOT NULL — количество данной леммы для данной страницы.
+
+
+##  Запуск проекта локально  
+Для запуска проекта необходимо:  
+1.  создать папку, в которую будут склонированы исходники и выполнить команду:  
+
+        git clone https://github.com/Alexander-ILIN/another-searchengine.git
+
+2.  открыть проект `File --> Open ...`
