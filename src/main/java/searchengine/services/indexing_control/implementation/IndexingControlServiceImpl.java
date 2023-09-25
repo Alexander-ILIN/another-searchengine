@@ -25,13 +25,13 @@ import java.util.concurrent.*;
 class IndexingControlServiceImpl implements IndexingControlService
 {
 
-    SiteService siteService;
+    private SiteService siteService;
 
-    List<Future<?>> indexingFutureList;
+    private List<Future<?>> indexingFutureList;
 
-    ExecutorService executor;
+    private ExecutorService executor;
 
-    List<MappingIndexingService> siteProcessorList;
+    private List<MappingIndexingService> siteProcessorList;
 
     @Autowired
     public IndexingControlServiceImpl(SiteService siteService)

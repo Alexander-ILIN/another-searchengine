@@ -3,7 +3,7 @@ package searchengine.services.search;
 import searchengine.dto.ResponseWrapper;
 
 /**
- * интерфейс, использующийся для получения ответа на поисковый запрос от пользователя
+ * интерфейс, использующийся для выполнения поискового запроса пользователя
  */
 public interface SiteSearchService
 {

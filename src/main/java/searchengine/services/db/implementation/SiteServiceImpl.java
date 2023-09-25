@@ -14,7 +14,7 @@ import java.util.List;
 @Service
 class SiteServiceImpl implements SiteService
 {
-    SiteRepository siteRepository;
+    private SiteRepository siteRepository;
 
     @Autowired
     public SiteServiceImpl(SiteRepository siteRepository)

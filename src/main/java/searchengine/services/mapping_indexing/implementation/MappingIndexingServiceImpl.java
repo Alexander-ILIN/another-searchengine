@@ -39,7 +39,7 @@ class MappingIndexingServiceImpl implements MappingIndexingService, SiteMappingS
 
     private Site processingSite;
 
-    AuxSiteData auxSiteData;
+    private AuxSiteData auxSiteData;
 
     private volatile boolean isTerminated = false;
 

@@ -29,7 +29,7 @@ class PageIndexingServiceImpl implements PageIndexingService
 
     private SearchIndexService searchIndexService;
 
-    Config config;
+    private Config config;
 
     @Autowired
     public PageIndexingServiceImpl(LemmasProcessingService lemmasProcessingService, LemmaService lemmaService,
