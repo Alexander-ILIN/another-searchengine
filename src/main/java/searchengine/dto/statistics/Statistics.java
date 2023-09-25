@@ -1,8 +1,8 @@
 package searchengine.dto.statistics;
 
 import lombok.Getter;
-import searchengine.model.entity.Site;
-import searchengine.model.entity.SiteStatus;
+import searchengine.model.Site;
+import searchengine.model.SiteStatus;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;

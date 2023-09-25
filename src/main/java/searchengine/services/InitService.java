@@ -3,10 +3,9 @@ package searchengine.services;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import searchengine.config.SitesList;
-import searchengine.model.entity.Site;
-import searchengine.model.entity.SiteStatus;
-import searchengine.services.db.SiteService;
-import searchengine.services.mapping_indexing.MappingIndexingService;
+import searchengine.model.Site;
+import searchengine.model.SiteStatus;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;

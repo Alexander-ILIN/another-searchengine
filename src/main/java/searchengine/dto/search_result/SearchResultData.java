@@ -1,7 +1,7 @@
 package searchengine.dto.search_result;
 
 import lombok.Getter;
-import searchengine.services.search.implementation.SearchResultProcessor;
+import searchengine.services.SearchResultProcessor;
 
 /**
  * класс, используемый для хранения данных для ответа на поисковый запрос
