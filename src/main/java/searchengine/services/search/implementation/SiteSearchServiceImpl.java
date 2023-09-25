@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  * класс, реализующий выполнение поискового запроса пользователя
  */
 @Service
-class SearchResultServiceImpl implements SiteSearchService
+class SiteSearchServiceImpl implements SiteSearchService
 {
     private final LemmasProcessingService lemmasProcessingService; // лемматизатор
 
@@ -59,8 +59,8 @@ class SearchResultServiceImpl implements SiteSearchService
     private static final int LEADING_AND_TRAILING_ITEMS_QTY = 60;
 
     @Autowired
-    public SearchResultServiceImpl(LemmasProcessingService lemmasProcessingService, LemmaService lemmaService, SearchIndexService searchIndexService,
-                                   PageService pageService, SiteService siteService, Config config)
+    public SiteSearchServiceImpl(LemmasProcessingService lemmasProcessingService, LemmaService lemmaService, SearchIndexService searchIndexService,
+                                 PageService pageService, SiteService siteService, Config config)
     {
         this.lemmasProcessingService = lemmasProcessingService;
         this.lemmaService = lemmaService;
