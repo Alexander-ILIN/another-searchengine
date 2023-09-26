@@ -191,7 +191,10 @@
    -  размер буфера, использующегося при сохранении лемм - `lemmaBufferSize`;
    -  размер буфера, использующегося при сохранении поисковых индексов - `indexBufferSize`;
    -  пороговое значение коэффициента встречаемости леммы на сайте - `lemmaOccurrenceLimit`;
-   
+   -  название пользовательского логера (уровень логирования = `loggingLevel`) - `customLoggerName`;
+
+-  уровнень логирования для пользовательского логера - `loggingLevel`;
+-  папка для сохранения файла с логами - `logPath`;
 -  свойства подключения к базе данных: хост, порт, имя базы - `spring:datasource:url`;
 -  свойства подключения к базе данных: логин - `spring:datasource:username`;
 -  свойства подключения к базе данных: пароль - `spring:datasource:password`;
@@ -199,43 +202,55 @@
 -  режим управления структурой базы данных - `spring:jpa:hibernate:ddl-auto`.
 
 Пример заполненного файла application.yaml:  
+          
+      # Перечень сайтов
+      indexing-settings:
+        sites:
+          - url: https://www.svetlovka.ru/
+            name: Библиотека имени М. А. Светлова
+          - url: https://prestonparkmuseum.co.uk/
+            name: Preston park
+          - url: https://ipfran.ru/
+            name: Институт прикладной физики им. А.В. Гапонова-Грехова
+      
+      indexing-config:
+      
+        # Свойства User Agent
+        # userAgent: Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:93.0) Gecko/20100101 Firefox/93.0
+        userAgent: another search engine bot
+        referrer: http://www.google.com
+      
+        # Размер буферов для сохранения в БД
+        pageBufferSize: 100
+        lemmaBufferSize: 1000
+        indexBufferSize: 5000
+      
+        # Пороговое значение коэффициента встречаемости леммы на сайте - значение при котором лемма исключается из поиска
+        # коэффициента встречаемости леммы на сайте = количество страниц, на которых встречается лемма / общее число страниц на сайте
+        lemmaOccurrenceLimit: 0.75
+      
+        # Имя логера, отображаемое в файле с логами (уровень логера = loggingLevel)
+        customLoggerName: LOG
+      
+      # Уровень логирования
+      loggingLevel: 350
 
-    # Перечень сайтов
-    indexing-settings:
-      sites:
-        - url: https://www.svetlovka.ru/
-          name: Библиотека имени М. А. Светлова
-        - url: https://prestonparkmuseum.co.uk/
-          name: Preston park
-        - url: https://ipfran.ru/
-          name: Институт прикладной физики им. А.В. Гапонова-Грехова
-
-    indexing-config:
-      # Свойства User Agent
-      userAgent: another search engine bot
-      referrer: http://www.google.com
-      # Размер буферов для сохранения в БД
-      pageBufferSize: 100
-      lemmaBufferSize: 1000
-      indexBufferSize: 5000
-
-      # Пороговое значение коэффициента встречаемости леммы на сайте - значение при котором лемма исключается из поиска
-      # коэффициента встречаемости леммы на сайте = количество страниц, на которых встречается лемма / общее число страниц на сайте
-      lemmaOccurrenceLimit: 0.75
-
-    # Свойства подключения к БД
-    spring:
-      datasource:
-        url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
-        username: bestuser
-        password: bestuser
-
-      jpa:
-        properties:
+      # Папка для сохранения логов
+      logPath: logs
+      
+      # Свойства подключения к БД
+      spring:
+        datasource:
+          url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
+          username: bestuser
+          password: bestuser
+      
+        jpa:
+          properties:
+            hibernate:
+              dialect: org.hibernate.dialect.MySQL8Dialect
           hibernate:
-            dialect: org.hibernate.dialect.MySQL8Dialect
-        hibernate:
-          ddl-auto: none
+            ddl-auto: none
     
 ---  
 
