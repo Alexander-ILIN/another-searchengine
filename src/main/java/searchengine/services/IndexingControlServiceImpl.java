@@ -1,5 +1,6 @@
 package searchengine.services;
 
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
@@ -10,7 +11,6 @@ import searchengine.dto.response.ResponseFail;
 import searchengine.dto.response.ResponseSuccess;
 import searchengine.dto.ResponseWrapper;
 import searchengine.model.Site;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
@@ -19,10 +19,13 @@ import java.util.concurrent.*;
  * Класс, использующийся для запуска и остановки процесса индексации всех сайтов из конфигурационного файла
  */
 @Service
+@Log4j2
 class IndexingControlServiceImpl implements IndexingControlService
 {
 
-    private SiteService siteService;
+    private final SiteService siteService;
+
+    private final LoggingService loggingService;
 
     private List<Future<?>> indexingFutureList;
 
@@ -30,10 +33,12 @@ class IndexingControlServiceImpl implements IndexingControlService
 
     private List<MappingIndexingService> siteProcessorList;
 
+
     @Autowired
-    public IndexingControlServiceImpl(SiteService siteService)
+    public IndexingControlServiceImpl(SiteService siteService, LoggingService loggingService)
     {
         this.siteService = siteService;
+        this.loggingService = loggingService;
     }
 
     /**
@@ -45,6 +50,19 @@ class IndexingControlServiceImpl implements IndexingControlService
     @Override
     public ResponseWrapper launchSitesIndexing(String siteUrl)
     {
+        String logMsg;
+
+        if(null == siteUrl)
+        {
+            logMsg = "Индексация всех сайтов: запуск";
+        }
+        else
+        {
+            logMsg = "Индексация сайта " + siteUrl + " : запуск";
+        }
+
+        loggingService.logCustom(logMsg);
+
         HttpStatus httpStatus;
         Response response;
 
@@ -89,13 +107,14 @@ class IndexingControlServiceImpl implements IndexingControlService
         }
         catch (Exception ex)
         {
-            System.out.println(ex.getMessage());
-            ex.printStackTrace();
             response = new ResponseFail(false, "Ошибка при выполнении индексации");
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+            log.error("Индексация: ошибка", ex);
         }
 
         ResponseWrapper responseWrapper = new ResponseWrapper(httpStatus, response);
+
+        loggingService.logCustom("Индексация: результат = " + response.isResult());
 
         return responseWrapper;
     }
@@ -108,6 +127,8 @@ class IndexingControlServiceImpl implements IndexingControlService
     @Override
     public ResponseWrapper stopSitesIndexing()
     {
+        loggingService.logCustom("Остановка индексации: запуск");
+        ;
         Response response;
         HttpStatus httpStatus;
         int attemptsQty = 0;
@@ -150,13 +171,14 @@ class IndexingControlServiceImpl implements IndexingControlService
         }
         catch (Exception ex)
         {
-            System.out.println(ex.getMessage());
-            ex.printStackTrace();
             response = new ResponseFail(false, "Ошибка при остановке индексации");
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+            log.error("Остановка индексации: ошибка", ex);
         }
 
         ResponseWrapper responseWrapper = new ResponseWrapper(httpStatus, response);
+
+        loggingService.logCustom("Остановка индексации: результат = " + response.isResult());
 
         return responseWrapper;
     }
@@ -187,6 +209,8 @@ class IndexingControlServiceImpl implements IndexingControlService
     @Override
     public ResponseWrapper singlePageIndexing(String pageUrl)
     {
+        loggingService.logCustom("Индексация страницы " + pageUrl + " : запуск");
+
         ResponseWrapper responseWrapper;
 
         ApplicationContext context = Application.getContext();
@@ -212,6 +236,8 @@ class IndexingControlServiceImpl implements IndexingControlService
             responseWrapper = new ResponseWrapper(httpStatus, response);
         }
 
+        loggingService.logCustom("Индексация страницы: результат = " + responseWrapper.getResponse().isResult());
+
         return responseWrapper;
     }
 
@@ -232,7 +258,7 @@ class IndexingControlServiceImpl implements IndexingControlService
             }
             catch (InterruptedException e)
             {
-                e.printStackTrace();
+                log.error(e);
             }
             ++attemptsQty;
         }
@@ -273,7 +299,7 @@ class IndexingControlServiceImpl implements IndexingControlService
             }
             catch (Exception ex)
             {
-                System.out.println(ex.getMessage());
+                log.error("Индексация страницы: ошибка", ex);
             }
         }
 

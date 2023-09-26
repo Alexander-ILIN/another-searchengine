@@ -1,5 +1,6 @@
 package searchengine.services;
 
+import lombok.extern.log4j.Log4j2;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,6 @@ import searchengine.dto.response.ResponseFail;
 import searchengine.dto.response.ResponseSearch;
 import searchengine.dto.search_result.SearchResultData;
 import searchengine.model.*;
-
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
  * класс, реализующий выполнение поискового запроса пользователя
  */
 @Service
+@Log4j2
 class SiteSearchServiceImpl implements SiteSearchService
 {
     private final LemmasProcessingService lemmasProcessingService; // лемматизатор
@@ -34,6 +35,8 @@ class SiteSearchServiceImpl implements SiteSearchService
     private final SiteService siteService; // операции с сайтами в БД
 
     private final Config config; // доступ к параметрам конфигурации
+
+    private final LoggingService loggingService;
 
     private boolean isMapInitialized = false;
 
@@ -54,13 +57,14 @@ class SiteSearchServiceImpl implements SiteSearchService
 
     @Autowired
     public SiteSearchServiceImpl(LemmasProcessingService lemmasProcessingService, LemmaService lemmaService, SearchIndexService searchIndexService,
-                                 PageService pageService, SiteService siteService, Config config)
+                                 PageService pageService, SiteService siteService, LoggingService loggingService, Config config)
     {
         this.lemmasProcessingService = lemmasProcessingService;
         this.lemmaService = lemmaService;
         this.searchIndexService = searchIndexService;
         this.pageService = pageService;
         this.siteService = siteService;
+        this.loggingService = loggingService;
         this.config = config;
     }
 
@@ -74,6 +78,18 @@ class SiteSearchServiceImpl implements SiteSearchService
     @Override
     public ResponseWrapper searchSites(String queryText, String siteUrl, int resultsQtyLimit)
     {
+        String logMsg = "Поиск \"" + queryText + "\" по ";
+
+        if(null == siteUrl)
+        {
+            logMsg += "всем сайтам";
+        }
+        else
+        {
+            logMsg += ("сайту " + siteUrl + " ");
+        }
+        loggingService.logCustom(logMsg + ": запуск");
+
         Response response;
         HttpStatus httpStatus;
 
@@ -95,16 +111,18 @@ class SiteSearchServiceImpl implements SiteSearchService
         {
             response = new ResponseFail(false, ioEx.getMessage());
             httpStatus = HttpStatus.BAD_REQUEST;
+            log.error("Поиск: ошибка", ioEx);
         }
         catch (Exception ex)
         {
-            System.out.println(ex.getMessage());
-            ex.printStackTrace();
             response = new ResponseFail(false, "Не удалось совершить поиск");
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+            log.error("Поиск: ошибка", ex);
         }
 
         ResponseWrapper responseWrapper = new ResponseWrapper(httpStatus, response);
+
+        loggingService.logCustom("Поиск: результат = " + response.isResult());
 
         return responseWrapper;
     }
@@ -209,7 +227,7 @@ class SiteSearchServiceImpl implements SiteSearchService
                 }
                 catch (Exception ex)
                 {
-                    System.out.println(ex.getMessage());
+                    log.warn(ex.getMessage());
                 }
             }
             else

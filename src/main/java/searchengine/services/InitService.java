@@ -5,7 +5,6 @@ import org.springframework.stereotype.Component;
 import searchengine.config.SitesList;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,13 +21,17 @@ public class InitService
 
     private final MappingIndexingService mappingIndexingService;
 
+    private final LoggingService loggingService;
+
 
     @Autowired
-    public InitService(SiteService siteService, SitesList sites, MappingIndexingService mappingIndexingService)
+    public InitService(SiteService siteService, SitesList sites, MappingIndexingService mappingIndexingService,
+                       LoggingService loggingService)
     {
         this.siteService = siteService;
         this.sites = sites;
         this.mappingIndexingService = mappingIndexingService;
+        this.loggingService = loggingService;
     }
 
 
@@ -61,6 +64,8 @@ public class InitService
 
         saveAddedSites(configSites.values());
         removeConfigAbsentSites(sitesToRemove);
+
+        loggingService.logCustom("Приложение запущено");
     }
 
     /**

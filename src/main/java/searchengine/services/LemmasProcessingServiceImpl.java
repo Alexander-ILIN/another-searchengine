@@ -1,10 +1,10 @@
 package searchengine.services;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.english.EnglishLuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.springframework.stereotype.Service;
-import searchengine.services.LemmasProcessingService;
 import java.io.IOException;
 import java.util.*;
 
@@ -15,6 +15,7 @@ import java.util.*;
  *  3. лемм заданного слова;
  */
 @Service
+@Log4j2
 class LemmasProcessingServiceImpl implements LemmasProcessingService
 {
     private LuceneMorphology russianLuceneMorphology;
@@ -56,7 +57,7 @@ class LemmasProcessingServiceImpl implements LemmasProcessingService
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            log.error(e);
         }
     }
 

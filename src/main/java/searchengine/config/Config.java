@@ -32,4 +32,8 @@ public class Config
 
     // Пороговое значение коэффициента встречаемости леммы на сайте
     private float lemmaOccurrenceLimit;
+
+    // Имя логера
+    private String customLoggerName;
+
 }

@@ -1,5 +1,6 @@
 package searchengine.services;
 
+import lombok.extern.log4j.Log4j2;
 import org.jsoup.Connection;
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
@@ -18,6 +19,7 @@ import java.util.concurrent.RecursiveAction;
 /**
  * класс, использующийся для запуска ForkJoinTask
  */
+@Log4j2
 class LinkProcessor extends RecursiveAction
 {
     private final String url;                     // ссылка на текущую страницу
@@ -69,7 +71,7 @@ class LinkProcessor extends RecursiveAction
         }
         catch (Exception e)
         {
-            System.out.println(e.getMessage());
+            log.warn(e);
         }
     }
 

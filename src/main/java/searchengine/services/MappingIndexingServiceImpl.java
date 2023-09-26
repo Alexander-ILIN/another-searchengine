@@ -1,5 +1,6 @@
 package searchengine.services;
 
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -20,18 +21,21 @@ import java.util.concurrent.ForkJoinPool;
  */
 @Service
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+@Log4j2
 class MappingIndexingServiceImpl implements MappingIndexingService, SiteMappingService
 {
     private Set<Page> pagesBuffer = new ConcurrentSkipListSet<>();
     private int bufferSize = 0;
 
-    private PageService pageService;
+    private final PageService pageService;
 
-    private Config config;
+    private final Config config;
 
-    private PageIndexingService pageIndexingService;
+    private final PageIndexingService pageIndexingService;
 
-    private SiteService siteService;
+    private final SiteService siteService;
+
+    private final LoggingService loggingService;
 
     private Site processingSite;
 
@@ -41,11 +45,14 @@ class MappingIndexingServiceImpl implements MappingIndexingService, SiteMappingS
 
 
     @Autowired
-    public MappingIndexingServiceImpl(PageService pageService, Config config, PageIndexingService pageIndexingService, SiteService siteService) {
+    public MappingIndexingServiceImpl(PageService pageService, Config config, PageIndexingService pageIndexingService,
+                                      SiteService siteService, LoggingService loggingService)
+    {
         this.pageService = pageService;
         this.config = config;
         this.pageIndexingService = pageIndexingService;
         this.siteService = siteService;
+        this.loggingService = loggingService;
     }
 
     /**
@@ -76,7 +83,7 @@ class MappingIndexingServiceImpl implements MappingIndexingService, SiteMappingS
             setProcessingSiteStatus(SiteStatus.INDEXED);
         }
 
-        System.out.println("Indexing of \"" + site.getName() + "\" completed or terminated");
+        loggingService.logCustom("Индексация сайта \"" + site.getName() + "\" завершена или прервана");
 
     }
 
@@ -124,7 +131,7 @@ class MappingIndexingServiceImpl implements MappingIndexingService, SiteMappingS
         }
         catch (Exception ex)
         {
-            System.out.println(ex.getMessage());
+            log.error(ex);
             return -1;
         }
 

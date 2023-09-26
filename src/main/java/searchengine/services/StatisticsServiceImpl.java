@@ -1,5 +1,6 @@
 package searchengine.services;
 
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import searchengine.model.Site;
  * класс, использующийся для сбора статистики по индексации сайтов: общей и по каждому сайту
  */
 @Service
+@Log4j2
 class StatisticsServiceImpl implements StatisticsService
 {
     private final SiteService siteService;
@@ -24,14 +26,17 @@ class StatisticsServiceImpl implements StatisticsService
 
     private final IndexingControlService indexingControlService;
 
+    private final LoggingService loggingService;
+
     @Autowired
     public StatisticsServiceImpl(SiteService siteService, PageService pageService, LemmaService lemmaService,
-                                 IndexingControlService indexingControlService)
+                                 IndexingControlService indexingControlService, LoggingService loggingService)
     {
         this.siteService = siteService;
         this.pageService = pageService;
         this.lemmaService = lemmaService;
         this.indexingControlService = indexingControlService;
+        this.loggingService = loggingService;
     }
 
     /**
@@ -41,6 +46,8 @@ class StatisticsServiceImpl implements StatisticsService
     @Override
     public ResponseWrapper getStatistics()
     {
+        loggingService.logCustom("Получение статистики: запуск");
+
         Response response;
         HttpStatus httpStatus;
         try {
@@ -67,13 +74,14 @@ class StatisticsServiceImpl implements StatisticsService
         }
         catch (Exception ex)
         {
-            System.out.println(ex.getMessage());
-            ex.printStackTrace();
             response = new ResponseFail(false, "Ошибка при получении статистики");
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+            log.error("Получение статистики: ошибка", ex);
         }
 
         ResponseWrapper responseWrapper = new ResponseWrapper(httpStatus, response);
+
+        loggingService.logCustom("Получение статистики: результат = " + response.isResult());
 
         return responseWrapper;
     }

@@ -52,7 +52,7 @@ public class ApiController {
         return ResponseEntity.status(responseWrapper.getHttpStatus()).body(responseWrapper.getResponse());
     }
 
-    @GetMapping(value = "/search")
+    @GetMapping("/search")
     public ResponseEntity<Response> search(@RequestParam(name = "query") String queryText,
                                            @RequestParam(required = false, name = "site") String siteUrl,
                                            @RequestParam(name = "offset") int outputOffset,
