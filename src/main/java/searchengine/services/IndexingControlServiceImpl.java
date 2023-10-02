@@ -69,31 +69,7 @@ class IndexingControlServiceImpl implements IndexingControlService
         try {
             if (!isIndexingInProgress())
             {
-                indexingFutureList = new ArrayList<>();
-                siteProcessorList = new ArrayList<>();
-                executor = Executors.newCachedThreadPool();
-
-                Iterable<Site> sites = getSitesForIndexing(siteUrl);
-
-                ApplicationContext context = Application.getContext();
-
-                for (Site curSite : sites)
-                {
-                    MappingIndexingService mappingIndexingService =
-                            context.getBean(MappingIndexingService.class);
-
-                    mappingIndexingService.removeSiteData(curSite);
-
-                    siteProcessorList.add(mappingIndexingService);
-
-                    Runnable indexingRunnable = () -> mappingIndexingService.getAndIndexPages(curSite);
-
-                    Future<?> indexingFuture = executor.submit(indexingRunnable);
-
-                    indexingFutureList.add(indexingFuture);
-                }
-
-                executor.shutdown();
+                startIndexingSitesProcess(siteUrl);
 
                 response = new ResponseSuccess(true);
                 httpStatus = HttpStatus.OK;
@@ -120,6 +96,40 @@ class IndexingControlServiceImpl implements IndexingControlService
     }
 
     /**
+     * Запуск процесса индексации выбранного сайта / всех сайтов из конфигурационного файла
+     * @param siteUrl ссылка на сайт. Если null, то индексируются все сайты
+     */
+    private void startIndexingSitesProcess(String siteUrl)
+    {
+        indexingFutureList = new ArrayList<>();
+        siteProcessorList = new ArrayList<>();
+        executor = Executors.newCachedThreadPool();
+
+        Iterable<Site> sites = getSitesForIndexing(siteUrl);
+
+        ApplicationContext context = Application.getContext();
+
+        for (Site curSite : sites)
+        {
+            MappingIndexingService mappingIndexingService =
+                    context.getBean(MappingIndexingService.class);
+
+            mappingIndexingService.removeSiteData(curSite);
+
+            siteProcessorList.add(mappingIndexingService);
+
+            Runnable indexingRunnable = () -> mappingIndexingService.getAndIndexPages(curSite);
+
+            Future<?> indexingFuture = executor.submit(indexingRunnable);
+
+            indexingFutureList.add(indexingFuture);
+        }
+
+        executor.shutdown();
+    }
+
+
+    /**
      * Остановка процесса индексации
      * @return объект ResponseWrapper: HTTP статус и Response со значением true, если текущая индексация была остановлена;
      * со значением false, если процесс индексации не удалось остановить
@@ -128,32 +138,16 @@ class IndexingControlServiceImpl implements IndexingControlService
     public ResponseWrapper stopSitesIndexing()
     {
         loggingService.logCustom("Остановка индексации: запуск");
-        ;
+
         Response response;
         HttpStatus httpStatus;
-        int attemptsQty = 0;
-        int maxAttempts = 40;
 
         try
         {
             if (isIndexingInProgress())
             {
-                //Profiling
-                long start = System.currentTimeMillis();
-
-                for (MappingIndexingService siteProcessor : siteProcessorList)
+                if (stopIndexingSitesProcess())
                 {
-                    siteProcessor.terminate();
-                }
-
-                attemptsQty = waitForCompletion(500, maxAttempts);
-
-                if (attemptsQty < maxAttempts)
-                {
-                    //Profiling
-                    long end = System.currentTimeMillis();
-                    System.out.println("Terminated " + (end - start) + " ms");
-
                     response = new ResponseSuccess(true);
                     httpStatus = HttpStatus.OK;
                 }
@@ -181,6 +175,38 @@ class IndexingControlServiceImpl implements IndexingControlService
         loggingService.logCustom("Остановка индексации: результат = " + response.isResult());
 
         return responseWrapper;
+    }
+
+    /**
+     * Запуск остановки процесса индексации сайтов
+     * @return false, время ожидания остановки индексации истекло; true, если индексация остановлена
+     */
+    private boolean stopIndexingSitesProcess()
+    {
+        int attemptsQty;
+        int maxAttempts = 40;
+
+        //Profiling
+        long start = System.currentTimeMillis();
+
+        for (MappingIndexingService siteProcessor : siteProcessorList)
+        {
+            siteProcessor.terminate();
+        }
+
+        attemptsQty = waitForCompletion(500, maxAttempts);
+
+        if (attemptsQty < maxAttempts)
+        {
+            //Profiling
+            long end = System.currentTimeMillis();
+            System.out.println("Terminated " + (end - start) + " ms");
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     /**
@@ -213,19 +239,10 @@ class IndexingControlServiceImpl implements IndexingControlService
 
         ResponseWrapper responseWrapper;
 
-        ApplicationContext context = Application.getContext();
-
         if(!isIndexingInProgress())
         {
-            indexingFutureList = new ArrayList<>();
-            executor = Executors.newCachedThreadPool();
-            MappingIndexingService mappingIndexingService =
-                context.getBean(MappingIndexingService.class);
+            Future<Integer> indexingFuture = startSinglePageIndexingProcess(pageUrl);
 
-            Callable<Integer> indexingCallable = () -> mappingIndexingService.indexSinglePage(pageUrl);
-            Future<Integer> indexingFuture = executor.submit(indexingCallable);
-            indexingFutureList.add(indexingFuture);
-            executor.shutdown();
             responseWrapper = getPageIndexingResponse(indexingFuture);
         }
         else
@@ -240,6 +257,29 @@ class IndexingControlServiceImpl implements IndexingControlService
 
         return responseWrapper;
     }
+
+    /**
+     * Запуск процесса индексации отдельной страницы
+     * @param pageUrl ссылка на страницу
+     * @return объект Future, содержащий результат индексации страницы
+     */
+    private Future<Integer> startSinglePageIndexingProcess(String pageUrl)
+    {
+        ApplicationContext context = Application.getContext();
+
+        indexingFutureList = new ArrayList<>();
+        executor = Executors.newCachedThreadPool();
+        MappingIndexingService mappingIndexingService =
+                context.getBean(MappingIndexingService.class);
+
+        Callable<Integer> indexingCallable = () -> mappingIndexingService.indexSinglePage(pageUrl);
+        Future<Integer> indexingFuture = executor.submit(indexingCallable);
+        indexingFutureList.add(indexingFuture);
+        executor.shutdown();
+
+        return indexingFuture;
+    }
+
 
     /**
      * Проверка, осуществляется ли процесс индексации и приостановка главного потока

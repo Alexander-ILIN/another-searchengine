@@ -78,17 +78,7 @@ class SiteSearchServiceImpl implements SiteSearchService
     @Override
     public ResponseWrapper searchSites(String queryText, String siteUrl, int resultsQtyLimit)
     {
-        String logMsg = "Поиск \"" + queryText + "\" по ";
-
-        if(null == siteUrl)
-        {
-            logMsg += "всем сайтам";
-        }
-        else
-        {
-            logMsg += ("сайту " + siteUrl + " ");
-        }
-        loggingService.logCustom(logMsg + ": запуск");
+        logOnSearchStart(queryText, siteUrl);
 
         Response response;
         HttpStatus httpStatus;
@@ -125,6 +115,26 @@ class SiteSearchServiceImpl implements SiteSearchService
         loggingService.logCustom("Поиск: результат = " + response.isResult());
 
         return responseWrapper;
+    }
+
+    /**
+     * логирование начала поиска
+     * @param queryText поисковый запрос
+     * @param siteUrl ссылка на сайт, по которому необходимо осуществить поиск
+     */
+    private void logOnSearchStart(String queryText, String siteUrl)
+    {
+        String logMsg = "Поиск \"" + queryText + "\" по ";
+
+        if(null == siteUrl)
+        {
+            logMsg += "всем сайтам";
+        }
+        else
+        {
+            logMsg += ("сайту " + siteUrl + " ");
+        }
+        loggingService.logCustom(logMsg + ": запуск");
     }
 
     /**
@@ -185,36 +195,20 @@ class SiteSearchServiceImpl implements SiteSearchService
     private void getSiteSearchResults(Set<String> lemmasSet, Site site)
     {
         isMapInitialized = false;
-        boolean excludeFrequentLemmas = false;
 
         SearchResultProcessor.clearSiteSearchResult();
 
         List<Lemma> lemmas = lemmaService.findLemmas(lemmasSet, site.getId());
 
-        int lemmasQty = lemmas.size();
-
         long pagesQty = pageService.countAllBySiteId(site.getId());
 
-        float lemmaOccurrenceLimit = config.getLemmaOccurrenceLimit();
-
-        if(lemmasQty > 1)
-        {
-            Lemma firstLemma = lemmas.get(0);
-            float firstLemmaOccurrence = (float) firstLemma.getFrequency() / (float) pagesQty;
-
-            excludeFrequentLemmas = firstLemmaOccurrence < lemmaOccurrenceLimit;
-        }
+        boolean excludeFrequentLemmas = isExcludeFrequentLemmas(lemmas, pagesQty);
 
         for (Lemma curLemma : lemmas)
         {
-
-            if(excludeFrequentLemmas)
+            if(isSkippedLemma(excludeFrequentLemmas, curLemma, pagesQty))
             {
-                float curLemmaOccurrence = (float) curLemma.getFrequency() / (float) pagesQty;
-                if(curLemmaOccurrence >= lemmaOccurrenceLimit)
-                {
-                    continue;
-                }
+                continue;
             }
 
             List<SearchIndex> curSearchIndexes = searchIndexService.findByLemmaId(curLemma.getId());
@@ -236,6 +230,55 @@ class SiteSearchServiceImpl implements SiteSearchService
             }
         }
         SearchResultProcessor.calculateAbsRelevanceForSitePages();
+    }
+
+    /**
+     * проверка необходимости пропуска часто встречающихся лемм
+     * @param lemmas список лемм из поискового запроса
+     * @param pagesQty количество страниц сайта
+     * @return true, если часто встречающиеся леммы необходимо исключать из поискового запроса;
+     * false - в противном случае: если в поисковом запросе одна лемма или
+     * наименьший коэффициент встречаемости лемм из поискового запроса больше, чем пороговое значение коэффициента встречаемости леммы на сайте
+     */
+    private boolean isExcludeFrequentLemmas(List<Lemma> lemmas, long pagesQty)
+    {
+        boolean excludeFrequentLemmas = false;
+
+        int lemmasQty = lemmas.size();
+        float lemmaOccurrenceLimit = config.getLemmaOccurrenceLimit();
+
+        if(lemmasQty > 1)
+        {
+            Lemma firstLemma = lemmas.get(0);
+            float firstLemmaOccurrence = (float) firstLemma.getFrequency() / (float) pagesQty;
+
+            excludeFrequentLemmas = firstLemmaOccurrence < lemmaOccurrenceLimit;
+        }
+
+        return excludeFrequentLemmas;
+    }
+
+    /**
+     * проверка необходимости исключения конкретной леммы из поискового запроса
+     * @param excludeFrequentLemmas исключаются ли из поискового запроса часто встречающихся леммы
+     * @param curLemma лемма
+     * @param pagesQty количество страниц на сайте
+     * @return true, если лемму нужно исключить из поискового запроса; false - в противном случае
+     */
+    private boolean isSkippedLemma(boolean excludeFrequentLemmas, Lemma curLemma, long pagesQty)
+    {
+        boolean skipLemma = false;
+
+        float lemmaOccurrenceLimit = config.getLemmaOccurrenceLimit();
+
+        if(excludeFrequentLemmas)
+        {
+            float curLemmaOccurrence = (float) curLemma.getFrequency() / (float) pagesQty;
+
+            skipLemma = curLemmaOccurrence >= lemmaOccurrenceLimit;
+        }
+
+        return skipLemma;
     }
 
     /**
@@ -308,9 +351,7 @@ class SiteSearchServiceImpl implements SiteSearchService
         int lastReqWordPos = 0;
 
         Document htmlDocument = searchResultProcessor.getHtmlDocument();
-
         List<String> bodies = htmlDocument.select("body").eachText();
-
         if(bodies.size() == 0)
         {
             return;
@@ -319,7 +360,6 @@ class SiteSearchServiceImpl implements SiteSearchService
         for(String body : bodies)
         {
             String[] words = body.split(REQ_SPLIT_REGEX);
-
             for(String curWord : words)
             {
                 if(isWordSearched(curWord, reqLemmas))
@@ -390,6 +430,7 @@ class SiteSearchServiceImpl implements SiteSearchService
     {
         int i = firstReqWordPos;
         int counter = 0;
+
         while(i > 0 && !snippetWords.get(i).equals(".") && counter < LEADING_AND_TRAILING_ITEMS_QTY)
         {
             --i;
@@ -405,18 +446,22 @@ class SiteSearchServiceImpl implements SiteSearchService
 
         i = lastReqWordPos;
         counter = 0;
+
         while(i < snippetWords.size() - 1 && !snippetWords.get(i).equals(".") && counter < LEADING_AND_TRAILING_ITEMS_QTY)
         {
             ++i;
             ++counter;
         }
+
         lastReqWordPos = i;
 
         StringBuilder snippetText = new StringBuilder();
+
         for(int j = firstReqWordPos; j <= lastReqWordPos; j++)
         {
             snippetText.append(snippetWords.get(j));
         }
+
         return snippetText.toString().trim();
     }
 

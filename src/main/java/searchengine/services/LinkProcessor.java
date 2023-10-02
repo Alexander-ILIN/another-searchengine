@@ -142,7 +142,6 @@ class LinkProcessor extends RecursiveAction
             htmlDocument = response.parse();
 
             body = htmlDocument.toString();
-
         }
         catch (HttpStatusException ex)
         {
@@ -151,15 +150,7 @@ class LinkProcessor extends RecursiveAction
             exceptionMessage = ex.getMessage();
         }
 
-        String pageUrl;
-        if(url.equals(auxSiteData.getRootUrl()))
-        {
-            pageUrl = "/";
-        }
-        else
-        {
-            pageUrl = url.substring(auxSiteData.getRootUrlLen());
-        }
+        String pageUrl = getPageUrlFromRoot(url);
 
         SiteMappingService siteMappingService = this.auxSiteData.getSiteMapper();
         siteMappingService.proceedWithPageData(pageUrl, responseCode, body, auxSiteData.getSiteId());
@@ -170,5 +161,25 @@ class LinkProcessor extends RecursiveAction
         }
 
         return htmlDocument;
+    }
+
+    /**
+     * получение ссылки на страницу от корня сайта
+     * @param fullPageUrl полная ссылка на страницу (начинается с ссылки на сайт)
+     * @return ссылка на страницу от корня сайта
+     */
+    private String getPageUrlFromRoot(String fullPageUrl)
+    {
+        String pageUrl;
+        if(fullPageUrl.equals(auxSiteData.getRootUrl()))
+        {
+            pageUrl = "/";
+        }
+        else
+        {
+            pageUrl = fullPageUrl.substring(auxSiteData.getRootUrlLen());
+        }
+
+        return pageUrl;
     }
 }

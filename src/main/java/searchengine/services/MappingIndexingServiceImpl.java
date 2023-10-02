@@ -63,7 +63,7 @@ class MappingIndexingServiceImpl implements MappingIndexingService, SiteMappingS
     {
         this.processingSite = site;
 
-        setProcessingSiteStatus(SiteStatus.INDEXING);
+        setProcessingSiteStatus(SiteStatus.INDEXING, null);
 
         LinkProcessor linkProcessor = prepareLinkProcessor(site);
 
@@ -73,14 +73,13 @@ class MappingIndexingServiceImpl implements MappingIndexingService, SiteMappingS
 
         if(isTerminated)
         {
-            site.setLastError("Индексация была принудительно остановлена");
-            setProcessingSiteStatus(SiteStatus.FAILED);
+            setProcessingSiteStatus(SiteStatus.FAILED, "Индексация была принудительно остановлена");
         }
         else
         {
             avoidDuplicatesInBuffer();
             saveAndIndexPages();
-            setProcessingSiteStatus(SiteStatus.INDEXED);
+            setProcessingSiteStatus(SiteStatus.INDEXED, null);
         }
 
         loggingService.logCustom("Индексация сайта \"" + site.getName() + "\" завершена или прервана");
@@ -116,12 +115,32 @@ class MappingIndexingServiceImpl implements MappingIndexingService, SiteMappingS
 
         List<Page> foundPages = findPage(pageUrl, site);
 
+        Page pageForReindexing = null;
+
         if(foundPages.size() > 1)
         {
             return -1;
         }
+        else if(foundPages.size() == 1)
+        {
+            pageForReindexing = foundPages.get(0);
+        }
 
-        setProcessingSiteStatus(SiteStatus.INDEXING);
+        int indexingResult = startSinglePageIndexingProcess(pageUrl, pageForReindexing, site);
+
+        return indexingResult;
+    }
+
+    /**
+     * индексация / повторная индексация отдельной страницы;
+     * @param pageUrl ссылка на страницу
+     * @param pageForReindexing страница для повторной индексации
+     * @param site сайт, к которому относится страница
+     * @return -1 в случае ошибки, 1 в случае успеха
+     */
+    private int startSinglePageIndexingProcess(String pageUrl, Page pageForReindexing, Site site)
+    {
+        setProcessingSiteStatus(SiteStatus.INDEXING, null);
 
         LinkProcessor linkProcessor = prepareLinkProcessor(site);
 
@@ -132,22 +151,23 @@ class MappingIndexingServiceImpl implements MappingIndexingService, SiteMappingS
         catch (Exception ex)
         {
             log.error(ex);
+            setProcessingSiteStatus(SiteStatus.FAILED, ex.getMessage());
             return -1;
         }
 
-        if(foundPages.size() == 1)
+        if(null != pageForReindexing)
         {
-            Page foundPage = foundPages.get(0);
-            pageIndexingService.deletePageIndexData(foundPage);
-            if(!modifyPageInBuffer(foundPage))
+            pageIndexingService.deletePageIndexData(pageForReindexing);
+            if(!modifyPageInBuffer(pageForReindexing))
             {
+                setProcessingSiteStatus(SiteStatus.FAILED, "Не удалось получить содержимое страницы");
                 return -1;
             }
         }
 
         saveAndIndexPages();
 
-        setProcessingSiteStatus(SiteStatus.INDEXED);
+        setProcessingSiteStatus(SiteStatus.INDEXED, null);
 
         return 1;
     }
@@ -214,7 +234,7 @@ class MappingIndexingServiceImpl implements MappingIndexingService, SiteMappingS
             {
             System.out.println("Site # " + processingSite.getId() + " page # " + currentPage.getId() + " indexing started. Site indexer ==> " + pageIndexingService);
                 pageIndexingService.indexPage(currentPage);
-                setProcessingSiteStatus(SiteStatus.INDEXING);
+                setProcessingSiteStatus(SiteStatus.INDEXING, null);
             }
         }
         pagesBuffer.clear();
@@ -314,12 +334,14 @@ class MappingIndexingServiceImpl implements MappingIndexingService, SiteMappingS
 
     /**
      * задание статуса текущему сайту
-     * @param siteStatus
+     * @param siteStatus статус сайта
+     * @param lastError описание ошибки
      */
-    private void setProcessingSiteStatus(SiteStatus siteStatus)
+    private void setProcessingSiteStatus(SiteStatus siteStatus, String lastError)
     {
         processingSite.setStatus(siteStatus);
         processingSite.setStatusTime(LocalDateTime.now());
+        processingSite.setLastError(lastError);
         siteService.save(processingSite);
     }
 

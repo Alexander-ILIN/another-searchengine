@@ -64,27 +64,17 @@ class LemmaNonStandardRepositoryImpl implements LemmaNonStandardRepository
 
         List<Lemma> foundResults = new ArrayList<>();
 
-        String condDelimiter = "', ";
-        String condPrefix = "'";
-        String condSuffix = "";
-
-        String qryDelimiterUpdate = ", 1), (";
-        String qryPrefixUpdate = "INSERT INTO lemma (lemma, site_id, frequency) VALUES (";
-        String qrySuffixUpdate = ", 1) ON DUPLICATE KEY UPDATE frequency = frequency + 1";
-
-        String qryDelimiterSelect = "', '";
-        String qryPrefixSelect = "FROM Lemma WHERE lemma in ('";
-        String qrySuffixSelect = "') AND siteId = " + siteId;
-
         int bufferCounter = 0;
         int totalCounter = 0;
 
         int lemmasQty = lemmaStrings.size();
-        StringJoiner sqlConditionsUpdate = new StringJoiner(qryDelimiterUpdate, qryPrefixUpdate, qrySuffixUpdate);
-        StringJoiner sqlConditionsSelect = new StringJoiner(qryDelimiterSelect, qryPrefixSelect, qrySuffixSelect);
+
+        StringJoiner sqlConditionsUpdate = getSqlConditionsUpdate();
+        StringJoiner sqlConditionsSelect = getSqlConditionsSelect(siteId);
+
         for(String currentLemma : lemmaStrings)
         {
-            StringJoiner subCondUpdate = new StringJoiner(condDelimiter, condPrefix, condSuffix);
+            StringJoiner subCondUpdate = getSubCondUpdate();
             subCondUpdate.add(currentLemma);
             subCondUpdate.add(String.valueOf(siteId));
 
@@ -101,12 +91,51 @@ class LemmaNonStandardRepositoryImpl implements LemmaNonStandardRepository
                 List<Lemma> result =  selectQuery.getResultList();
                 foundResults.addAll(result);
                 bufferCounter = 0;
-                sqlConditionsUpdate = new StringJoiner(qryDelimiterUpdate, qryPrefixUpdate, qrySuffixUpdate);
-                sqlConditionsSelect = new StringJoiner(qryDelimiterSelect, qryPrefixSelect, qrySuffixSelect);
+                sqlConditionsUpdate = getSqlConditionsUpdate();
+                sqlConditionsSelect = getSqlConditionsSelect(siteId);
             }
         }
 
         return foundResults;
+    }
+
+    /**
+     * создание объекта StringJoiner, используемого для перечисления лемм в запросе в БД
+     * @return созданный объект StringJoiner
+     */
+    private StringJoiner getSubCondUpdate()
+    {
+        String condDelimiter = "', ";
+        String condPrefix = "'";
+        String condSuffix = "";
+
+        return new StringJoiner(condDelimiter, condPrefix, condSuffix);
+    }
+
+    /**
+     * создание объекта StringJoiner для вставки лемм в БД
+     * @return созданный объект StringJoiner
+     */
+    private StringJoiner getSqlConditionsUpdate()
+    {
+        String qryDelimiterUpdate = ", 1), (";
+        String qryPrefixUpdate = "INSERT INTO lemma (lemma, site_id, frequency) VALUES (";
+        String qrySuffixUpdate = ", 1) ON DUPLICATE KEY UPDATE frequency = frequency + 1";
+
+        return new StringJoiner(qryDelimiterUpdate, qryPrefixUpdate, qrySuffixUpdate);
+    }
+
+    /**
+     * создание объекта StringJoiner для получения лемм из БД
+     * @return созданный объект StringJoiner
+     */
+    private StringJoiner getSqlConditionsSelect(int siteId)
+    {
+        String qryDelimiterSelect = "', '";
+        String qryPrefixSelect = "FROM Lemma WHERE lemma in ('";
+        String qrySuffixSelect = "') AND siteId = " + siteId;
+
+        return new StringJoiner(qryDelimiterSelect, qryPrefixSelect, qrySuffixSelect);
     }
 
     /**
