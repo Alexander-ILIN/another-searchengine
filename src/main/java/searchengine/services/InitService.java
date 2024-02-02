@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import searchengine.config.SitesList;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,8 +14,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
-public class InitService
-{
+public class InitService {
     private final SiteService siteService;
 
     private final SitesList sites;
@@ -26,8 +26,7 @@ public class InitService
 
     @Autowired
     public InitService(SiteService siteService, SitesList sites, MappingIndexingService mappingIndexingService,
-                       LoggingService loggingService)
-    {
+                       LoggingService loggingService) {
         this.siteService = siteService;
         this.sites = sites;
         this.mappingIndexingService = mappingIndexingService;
@@ -39,8 +38,7 @@ public class InitService
      * сравнение списка сайтов, находящися в конфигурационном файле с БД;
      * добавление / удаление информации о сайтах из БД при расхождениях
      */
-    public void verifyConfigVsDbSites()
-    {
+    public void verifyConfigVsDbSites() {
         List<Site> sitesToRemove = new ArrayList<>();
 
         Map<String, searchengine.config.Site> configSites = sites.getSites().stream().
@@ -48,16 +46,12 @@ public class InitService
 
         Iterable<Site> dbSites = siteService.findAll();
 
-        for(Site curSiteDb : dbSites)
-        {
+        for (Site curSiteDb : dbSites) {
             String curSiteUrl = curSiteDb.getUrl();
 
-            if(configSites.containsKey(curSiteUrl))
-            {
+            if (configSites.containsKey(curSiteUrl)) {
                 configSites.remove(curSiteUrl);
-            }
-            else
-            {
+            } else {
                 sitesToRemove.add(curSiteDb);
             }
         }
@@ -70,14 +64,13 @@ public class InitService
 
     /**
      * сохранение в БД добавленных сайтов (присутствующих в конфигурационном файле и отсутствующих в БД)
+     *
      * @param newSitesFromConfig сайты, присутствующие в конфигурационном файле и отсутствующие в БД
      */
-    private void saveAddedSites(Collection<searchengine.config.Site> newSitesFromConfig)
-    {
+    private void saveAddedSites(Collection<searchengine.config.Site> newSitesFromConfig) {
         List<Site> sitesToSave = new ArrayList<>();
 
-        for(searchengine.config.Site curSite : newSitesFromConfig)
-        {
+        for (searchengine.config.Site curSite : newSitesFromConfig) {
             Site newSite = new Site(SiteStatus.INDEXING, LocalDateTime.now(), null,
                     UtilService.getUrlWithSlash(curSite.getUrl()), curSite.getName());
             sitesToSave.add(newSite);
@@ -88,12 +81,11 @@ public class InitService
 
     /**
      * удаление из БД данных, относящихся к сайтам, присутствующим в БД, но отсутствующим в конфигурационном файле
+     *
      * @param sitesToRemove сайты, присутствующие в БД, но отсутствующие в конфигурационном файле
      */
-    private void removeConfigAbsentSites(List<Site> sitesToRemove)
-    {
-        for(Site curSite : sitesToRemove)
-        {
+    private void removeConfigAbsentSites(List<Site> sitesToRemove) {
+        for (Site curSite : sitesToRemove) {
             mappingIndexingService.removeSiteData(curSite);
             siteService.delete(curSite);
         }

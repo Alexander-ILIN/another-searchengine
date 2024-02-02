@@ -15,13 +15,12 @@ import java.util.*;
 
 @Setter
 @Getter
-public class SearchResultProcessor
-{
+public class SearchResultProcessor {
     private static List<SearchResultProcessor> searchResultProcessorList = new ArrayList<>();             // список всех созданных объектов класса SearchResultProcessor для всех сайтов
     private static Map<Integer, SearchResultProcessor> siteSearchResultMap = new HashMap<>();    // Map, Key = id страницы, value = объект класса SearchResultProcessor, относящийся к странице для одного сайта
     private static float maxRelevance = 0f;     // максимальная относительная релевантность
-    private List<SearchIndex> searchIndexList;  // список объектов поисковых индексов
     private final int pageId;                   // id страницы, к которой относится данный объект класса SearchResultProcessor
+    private List<SearchIndex> searchIndexList;  // список объектов поисковых индексов
     private float absRelevance;                 // абсолютная релевантность страницы
     private float relRelevance;                 // относительная релевантность страницы
     private String title;                       // заголовок страницы
@@ -34,12 +33,12 @@ public class SearchResultProcessor
 
     /**
      * конструктор класса
-     * @param site сайт
-     * @param pageId ID страницы
+     *
+     * @param site        сайт
+     * @param pageId      ID страницы
      * @param searchIndex поисковый индекс
      */
-    public SearchResultProcessor(Site site, int pageId, SearchIndex searchIndex)
-    {
+    public SearchResultProcessor(Site site, int pageId, SearchIndex searchIndex) {
         this.pageId = pageId;
         this.siteUrl = UtilService.getUrlWithoutSlash(site.getUrl());
         this.siteName = site.getName();
@@ -49,35 +48,25 @@ public class SearchResultProcessor
     }
 
     /**
-     * добавление объекта поискового индекса
-     * @param searchIndex объект поискового индекса
-     */
-    public void addIndex(SearchIndex searchIndex)
-    {
-        searchIndexList.add(searchIndex);
-    }
-
-    /**
      * добавление объекта класса SearchResultProcessor в searchResultProcessorList
+     *
      * @param searchResultProcessor объект класса SearchResultProcessor
      */
-    public static void addSearchResult(SearchResultProcessor searchResultProcessor)
-    {
+    public static void addSearchResult(SearchResultProcessor searchResultProcessor) {
         searchResultProcessorList.add(searchResultProcessor);
     }
 
     /**
      * получение массива данных для ответа на поисковый запрос
+     *
      * @return массив данных для ответа на поисковый запрос
      */
-    public static SearchResultData[] generateResultArray()
-    {
+    public static SearchResultData[] generateResultArray() {
         int arraySize = searchResultProcessorList.size();
 
         SearchResultData[] resultArray = new SearchResultData[arraySize];
 
-        for (int i = 0; i < arraySize; i++)
-        {
+        for (int i = 0; i < arraySize; i++) {
             resultArray[i] = new SearchResultData(searchResultProcessorList.get(i));
         }
 
@@ -85,31 +74,27 @@ public class SearchResultProcessor
     }
 
     /**
-     *  очистка searchResultProcessorList и обнуление максимальной относительной релевантности
+     * очистка searchResultProcessorList и обнуление максимальной относительной релевантности
      */
-    public static void clearResults()
-    {
+    public static void clearResults() {
         searchResultProcessorList.clear();
         maxRelevance = 0.0f;
     }
 
-
     /**
      * очистка siteSearchResultMap
      */
-    public static void clearSiteSearchResult()
-    {
+    public static void clearSiteSearchResult() {
         siteSearchResultMap.clear();
     }
 
     /**
      * ограничение количества результатов поиска в соответствии с параметром поискового запроса
+     *
      * @param resultsQtyLimit
      */
-    public static void limitResults(int resultsQtyLimit)
-    {
-        if(searchResultProcessorList.size() > resultsQtyLimit)
-        {
+    public static void limitResults(int resultsQtyLimit) {
+        if (searchResultProcessorList.size() > resultsQtyLimit) {
             List<SearchResultProcessor> limitedList = searchResultProcessorList.subList(0, resultsQtyLimit);
             searchResultProcessorList = limitedList;
         }
@@ -118,18 +103,16 @@ public class SearchResultProcessor
     /**
      * запуск расчёта и заполнения относительных релевантностей страниц для всех объектов SearchResultProcessor
      */
-    private static void calculateRelRelevance()
-    {
+    private static void calculateRelRelevance() {
         searchResultProcessorList.stream().forEach(searchResultProcessor ->
-                searchResultProcessor.setRelRelevance(searchResultProcessor.getAbsRelevance()/ SearchResultProcessor.getMaxRelevance()));
+                searchResultProcessor.setRelRelevance(searchResultProcessor.getAbsRelevance() / SearchResultProcessor.getMaxRelevance()));
     }
 
     /**
      * метод запускает расчёт и заполнение и относительных релевантностей страниц для всех объектов SearchResultProcessor
      * после расчёта осуществляется сортировка страниц по относительной релевантности в обратном порядке
      */
-    public static void generateSortedTotalResults()
-    {
+    public static void generateSortedTotalResults() {
         calculateRelRelevance();
 
         searchResultProcessorList.sort(Comparator.comparing((SearchResultProcessor searchResultProcessor) ->
@@ -139,16 +122,13 @@ public class SearchResultProcessor
     /**
      * метод запускает расчёт и заполнение абсолютных релевантностей страниц для всех объектов SearchResultProcessor
      */
-    public static void calculateAbsRelevanceForSitePages()
-    {
-        for(SearchResultProcessor curSearchResultProcessor : siteSearchResultMap.values())
-        {
+    public static void calculateAbsRelevanceForSitePages() {
+        for (SearchResultProcessor curSearchResultProcessor : siteSearchResultMap.values()) {
             float curAbsRelevance = 0f;
 
             List<SearchIndex> curSearchIndexList = curSearchResultProcessor.getSearchIndexList();
 
-            for(SearchIndex curSearchIndex : curSearchIndexList)
-            {
+            for (SearchIndex curSearchIndex : curSearchIndexList) {
                 curAbsRelevance += curSearchIndex.getRank();
             }
 
@@ -161,11 +141,9 @@ public class SearchResultProcessor
     /**
      * метод заполняет поле title, для всех объектов SearchResultProcessor из searchResultProcessorList
      */
-    public static void setTitles()
-    {
+    public static void setTitles() {
 
-        for(SearchResultProcessor searchResultProcessor : searchResultProcessorList)
-        {
+        for (SearchResultProcessor searchResultProcessor : searchResultProcessorList) {
             Document htmlDocument = searchResultProcessor.getHtmlDocument();
             List<String> titles = htmlDocument.select("title").eachText();
             String title = (titles.size() == 0) ? "" : titles.get(0);
@@ -173,25 +151,28 @@ public class SearchResultProcessor
         }
     }
 
-    public static List<SearchResultProcessor> getSearchResultList()
-    {
+    public static List<SearchResultProcessor> getSearchResultList() {
         return searchResultProcessorList;
     }
 
-
-    public static Map<Integer, SearchResultProcessor> getSiteSearchResultMap()
-    {
+    public static Map<Integer, SearchResultProcessor> getSiteSearchResultMap() {
         return siteSearchResultMap;
     }
 
-
-    public static float getMaxRelevance()
-    {
+    public static float getMaxRelevance() {
         return maxRelevance;
     }
 
-    public static void setMaxRelevance(float maxRelevance)
-    {
+    public static void setMaxRelevance(float maxRelevance) {
         SearchResultProcessor.maxRelevance = maxRelevance;
+    }
+
+    /**
+     * добавление объекта поискового индекса
+     *
+     * @param searchIndex объект поискового индекса
+     */
+    public void addIndex(SearchIndex searchIndex) {
+        searchIndexList.add(searchIndex);
     }
 }

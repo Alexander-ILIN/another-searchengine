@@ -7,8 +7,7 @@ import lombok.Data;
  */
 
 @Data
-public abstract class Response
-{
+public abstract class Response {
     // Результат
     private final boolean result;
 

@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import searchengine.config.Config;
-import searchengine.repository.SearchIndexNonStandardRepository;
+
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import java.util.Map;
@@ -17,28 +17,26 @@ import java.util.StringJoiner;
 
 @Transactional
 @Repository
-class SearchIndexNonStandardRepositoryImpl implements SearchIndexNonStandardRepository
-{
-    private EntityManager entityManager;
+class SearchIndexNonStandardRepositoryImpl implements SearchIndexNonStandardRepository {
+    private final EntityManager entityManager;
 
-    private Config config;
+    private final Config config;
 
     @Autowired
-    public SearchIndexNonStandardRepositoryImpl(EntityManager entityManager, Config config)
-    {
+    public SearchIndexNonStandardRepositoryImpl(EntityManager entityManager, Config config) {
         this.entityManager = entityManager;
         this.config = config;
     }
 
     /**
      * создание и сохранение индексов в БД
-     * @param lemmasMap Map: key = значение леммы (String), value = id леммы в БД (Integer)
+     *
+     * @param lemmasMap           Map: key = значение леммы (String), value = id леммы в БД (Integer)
      * @param rankedPageLemmasMap Map: key = значение леммы (String), value = ранг леммы на странице (Float)
-     * @param pageId id страницы
+     * @param pageId              id страницы
      */
     @Override
-    public void saveIndexes(Map<String, Integer> lemmasMap, Map <String, Integer> rankedPageLemmasMap, Integer pageId)
-    {
+    public void saveIndexes(Map<String, Integer> lemmasMap, Map<String, Integer> rankedPageLemmasMap, Integer pageId) {
         int bufferSize = config.getIndexBufferSize();
 
         String qryDelimiterInsert = "), (";
@@ -51,8 +49,7 @@ class SearchIndexNonStandardRepositoryImpl implements SearchIndexNonStandardRepo
         int lemmasQty = rankedPageLemmasMap.size();
         StringJoiner sqlConditionsInsert = new StringJoiner(qryDelimiterInsert, qryPrefixInsert, qrySuffixInsert);
 
-        for(String currentLemmaStr : rankedPageLemmasMap.keySet())
-        {
+        for (String currentLemmaStr : rankedPageLemmasMap.keySet()) {
             StringJoiner curValues = new StringJoiner(", ");
 
             Integer currentLemmaId = lemmasMap.get(currentLemmaStr);
@@ -67,8 +64,7 @@ class SearchIndexNonStandardRepositoryImpl implements SearchIndexNonStandardRepo
             ++bufferCounter;
             ++totalCounter;
 
-            if (bufferCounter >= bufferSize || totalCounter >= lemmasQty)
-            {
+            if (bufferCounter >= bufferSize || totalCounter >= lemmasQty) {
                 Query insertQuery = entityManager.createNativeQuery(sqlConditionsInsert.toString());
                 insertQuery.executeUpdate();
                 bufferCounter = 0;
@@ -79,33 +75,33 @@ class SearchIndexNonStandardRepositoryImpl implements SearchIndexNonStandardRepo
 
     /**
      * удаление всех индексов, относящихся к странице
+     *
      * @param pageId id страницы
      */
     @Override
-    public void deleteByPageId(int pageId)
-    {
+    public void deleteByPageId(int pageId) {
         StringBuilder sqlQry = new StringBuilder();
         sqlQry.append("DELETE FROM SearchIndex WHERE pageId = ");
         sqlQry.append(pageId);
 
         Query deleteQuery = entityManager.createQuery(sqlQry.toString());
-        int result =  deleteQuery.executeUpdate();
+        int result = deleteQuery.executeUpdate();
     }
 
     /**
      * удаление всех индексов, относящихся к сайту
+     *
      * @param siteId id сайта
      */
     @Override
-    public void deleteBySiteId(int siteId)
-    {
+    public void deleteBySiteId(int siteId) {
         StringBuilder sqlQry = new StringBuilder();
         sqlQry.append("DELETE FROM SearchIndex WHERE pageId IN (SELECT id FROM Page WHERE site_id = ");
         sqlQry.append(siteId);
         sqlQry.append(")");
 
         Query deleteQuery = entityManager.createQuery(sqlQry.toString());
-        int result =  deleteQuery.executeUpdate();
+        int result = deleteQuery.executeUpdate();
     }
 
 }

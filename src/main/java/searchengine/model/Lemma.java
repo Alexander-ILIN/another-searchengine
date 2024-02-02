@@ -16,8 +16,7 @@ import javax.persistence.*;
 @Entity
 @Table(name = "lemma", uniqueConstraints = {@UniqueConstraint(columnNames = {"lemma", "site_id"})},
         indexes = @Index(columnList = "lemma"))
-public class Lemma
-{
+public class Lemma {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false, updatable = false)
@@ -33,8 +32,7 @@ public class Lemma
     private int frequency; // количество страниц, на которых слово встречается хотя бы один раз
 
 
-    public Lemma(String lemma, Integer frequency)
-    {
+    public Lemma(String lemma, Integer frequency) {
         this.lemma = lemma;
         this.frequency = frequency;
     }

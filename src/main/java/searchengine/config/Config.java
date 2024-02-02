@@ -13,8 +13,7 @@ import org.springframework.stereotype.Component;
 @Setter
 @Component
 @ConfigurationProperties("indexing-config")
-public class Config
-{
+public class Config {
     // User agent
     private String userAgent;
 

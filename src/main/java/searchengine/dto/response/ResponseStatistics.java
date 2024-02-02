@@ -8,13 +8,11 @@ import searchengine.dto.statistics.Statistics;
  */
 
 @Getter
-public class ResponseStatistics extends Response
-{
+public class ResponseStatistics extends Response {
     // Статистические данные
     private final Statistics statistics;
 
-    public ResponseStatistics(boolean result, Statistics statistics)
-    {
+    public ResponseStatistics(boolean result, Statistics statistics) {
         super(result);
         this.statistics = statistics;
     }

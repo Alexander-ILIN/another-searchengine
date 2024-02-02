@@ -3,6 +3,7 @@ package searchengine.model;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
@@ -11,8 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Entity
 @Table(name = "site")
-public class Site
-{
+public class Site {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false, updatable = false)
@@ -34,8 +34,7 @@ public class Site
     @Column(name = "name", nullable = false, columnDefinition = "VARCHAR(255)")
     private String name;
 
-    public Site(SiteStatus status, LocalDateTime statusTime, String lastError, String url, String name)
-    {
+    public Site(SiteStatus status, LocalDateTime statusTime, String lastError, String url, String name) {
         this.status = status;
         this.statusTime = statusTime;
         this.lastError = lastError;

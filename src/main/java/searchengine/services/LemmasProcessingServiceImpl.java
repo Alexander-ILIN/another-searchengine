@@ -5,31 +5,25 @@ import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.english.EnglishLuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.springframework.stereotype.Service;
+
 import java.io.IOException;
 import java.util.*;
 
 /**
  * Класс использующийся для получения:
- *  1. лемм всех слов из заданного текста и их повторений в тексте;
- *  2. лемм всех слов из заданного текста;
- *  3. лемм заданного слова;
+ * 1. лемм всех слов из заданного текста и их повторений в тексте;
+ * 2. лемм всех слов из заданного текста;
+ * 3. лемм заданного слова;
  */
 @Service
 @Log4j2
-class LemmasProcessingServiceImpl implements LemmasProcessingService
-{
-    private LuceneMorphology russianLuceneMorphology;
-    private LuceneMorphology englishLuceneMorphology;
-
+class LemmasProcessingServiceImpl implements LemmasProcessingService {
     // разбиение текста на слова
     private static final String WORDS_SPLIT_REGEX = "([^а-яА-Яa-zA-Z0-9]+)";
-
     // символы, обрабатываемые на страницах и в запросах
     private static final String ALLOWED_SYMBOLS_REGEX = "[а-яА-Яa-zA-Z0-9]+";
-
     // разделитель свойств в классах лемматизаторов
     private static final String PROPERTIES_SPLITTER = "|";
-
     // части речи английского и русского языков, которые необходимо исключать из списка лемм
     private final String ruConj = PartOfSpeech.CONJUNCTION.getRuDesc();
     private final String enConj = PartOfSpeech.CONJUNCTION.getEnDesc();
@@ -42,45 +36,39 @@ class LemmasProcessingServiceImpl implements LemmasProcessingService
     private final String enArt = PartOfSpeech.ARTICLE.getEnDesc();
     private final String ruPron = PartOfSpeech.PRONOUN.getRuDesc();
     private final String enPron = PartOfSpeech.PRONOUN.getEnDesc();
+    private LuceneMorphology russianLuceneMorphology;
+    private LuceneMorphology englishLuceneMorphology;
 
 
     /**
      * Конструктор класса
      * При создании экземпляра класса создаются экземпляры классов RussianLuceneMorphology и EnglishLuceneMorphology
      */
-    public LemmasProcessingServiceImpl()
-    {
-        try
-        {
+    public LemmasProcessingServiceImpl() {
+        try {
             russianLuceneMorphology = new RussianLuceneMorphology();
             englishLuceneMorphology = new EnglishLuceneMorphology();
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             log.error(e);
         }
     }
 
     /**
      * Метод выполняет разделение текста на слова, получение лемм их свойств для каждого слова
+     *
      * @param text текст
      * @return Map, содержащий леммы и количества их повторений в тексте
      */
     @Override
-    public Map<String, Integer> getTextLemmasWithFreq(String text)
-    {
+    public Map<String, Integer> getTextLemmasWithFreq(String text) {
         Map<String, Integer> lemmasMap = new HashMap<>();
 
         String[] words = text.split(WORDS_SPLIT_REGEX);
 
-        for(String inputWord : words)
-        {
-            try
-            {
+        for (String inputWord : words) {
+            try {
                 checkAndPutWord(inputWord.toLowerCase(), lemmasMap);
-            }
-            catch (Exception ex)
-            {
+            } catch (Exception ex) {
                 continue;
             }
         }
@@ -91,12 +79,12 @@ class LemmasProcessingServiceImpl implements LemmasProcessingService
 
     /**
      * Метод выполняет разделение текста на слова, получение лемм их свойств для каждого слова
+     *
      * @param text текст
      * @return Set, содержащий леммы, встречающиеся в тексте
      */
     @Override
-    public Set<String> getTextLemmas(String text)
-    {
+    public Set<String> getTextLemmas(String text) {
         Map<String, Integer> lemmasMap = getTextLemmasWithFreq(text);
         return lemmasMap.keySet();
     }
@@ -105,26 +93,20 @@ class LemmasProcessingServiceImpl implements LemmasProcessingService
     /**
      * Метод возвращает список нормальных форм слова на английском или русском языках.
      * Если нормальные формы слова не найдены, то возвращается пустой список
+     *
      * @param word - слово
      * @return список нормальных форм слова
      */
     @Override
-    public List<String> getWordLemmas(String word)
-    {
+    public List<String> getWordLemmas(String word) {
         List<String> wordForms = new ArrayList<>();
 
-        try
-        {
+        try {
             wordForms = russianLuceneMorphology.getNormalForms(word.toLowerCase());
-        }
-        catch (Exception ruEx)
-        {
-            try
-            {
+        } catch (Exception ruEx) {
+            try {
                 wordForms = englishLuceneMorphology.getNormalForms(word.toLowerCase());
-            }
-            catch (Exception enEx)
-            {
+            } catch (Exception enEx) {
                 return wordForms;
             }
         }
@@ -134,17 +116,15 @@ class LemmasProcessingServiceImpl implements LemmasProcessingService
 
     /**
      * Метод получает леммы слова и информацию о них и за добавляет леммы в lemmasMap
-     * @param word слово
+     *
+     * @param word      слово
      * @param lemmasMap Map, содержащий леммы и количества их повторений в тексте
      */
-    private void checkAndPutWord(String word, Map<String, Integer> lemmasMap)
-    {
+    private void checkAndPutWord(String word, Map<String, Integer> lemmasMap) {
         List<String> wordLemmas = getWordLemmas(word);
 
-        if(wordLemmas.size() == 0)
-        {
-            if(word.matches(ALLOWED_SYMBOLS_REGEX))
-            {
+        if (wordLemmas.size() == 0) {
+            if (word.matches(ALLOWED_SYMBOLS_REGEX)) {
                 putWord(word, lemmasMap);
             }
             return;
@@ -152,23 +132,20 @@ class LemmasProcessingServiceImpl implements LemmasProcessingService
 
         List<String> properties = getProperties(word);
 
-        for(int i = 0; i < properties.size(); i++)
-        {
+        for (int i = 0; i < properties.size(); i++) {
             String property = properties.get(i);
 
-            if(property.endsWith(ruConj) || property.endsWith(enConj) ||
+            if (property.endsWith(ruConj) || property.endsWith(enConj) ||
                     property.endsWith(ruInt) || property.endsWith(enInt) ||
                     property.endsWith(ruPart) || property.endsWith(enPart) ||
                     property.endsWith(ruPrep) || property.endsWith(enPrep) ||
-                    property.endsWith(enArt))
-            {
+                    property.endsWith(enArt)) {
                 continue;
             }
 
             int splitterPos = property.indexOf(PROPERTIES_SPLITTER);
             String propSubstr = property.substring(splitterPos);
-            if(propSubstr.contains(ruPron) || propSubstr.contains(enPron))
-            {
+            if (propSubstr.contains(ruPron) || propSubstr.contains(enPron)) {
                 continue;
             }
 
@@ -179,19 +156,16 @@ class LemmasProcessingServiceImpl implements LemmasProcessingService
 
     /**
      * Метод добавляет лемму слова в lemmasMap (key = лемма, value = количество повторений на странице)
-     * @param lemma лемма слова
+     *
+     * @param lemma     лемма слова
      * @param lemmasMap Map, содержащий леммы и количества их повторений в тексте
      */
-    private void putWord(String lemma, Map<String, Integer> lemmasMap)
-    {
-        if(lemmasMap.containsKey(lemma))
-        {
+    private void putWord(String lemma, Map<String, Integer> lemmasMap) {
+        if (lemmasMap.containsKey(lemma)) {
             Integer wordRepetitions = lemmasMap.get(lemma);
             ++wordRepetitions;
             lemmasMap.put(lemma, wordRepetitions);
-        }
-        else
-        {
+        } else {
             lemmasMap.put(lemma, 1);
         }
     }
@@ -199,19 +173,16 @@ class LemmasProcessingServiceImpl implements LemmasProcessingService
 
     /**
      * Метод возвращает список свойств слова на английском или русском языках
+     *
      * @param word слово
      * @return список свойств
      */
-    private List<String> getProperties(String word)
-    {
+    private List<String> getProperties(String word) {
         List<String> wordProperties;
 
-        try
-        {
+        try {
             wordProperties = russianLuceneMorphology.getMorphInfo(word.toLowerCase());
-        }
-        catch (Exception ruEx)
-        {
+        } catch (Exception ruEx) {
             wordProperties = englishLuceneMorphology.getMorphInfo(word.toLowerCase());
         }
 
@@ -219,13 +190,12 @@ class LemmasProcessingServiceImpl implements LemmasProcessingService
     }
 
 
-
-
     /**
      * ENUM
      * Части речи английского и русского языков, которые необходимо исключать из списка лемм
      */
-    private enum PartOfSpeech {CONJUNCTION("СОЮЗ", "CONJ"), INTERJECTION("МЕЖД", "INT"),
+    private enum PartOfSpeech {
+        CONJUNCTION("СОЮЗ", "CONJ"), INTERJECTION("МЕЖД", "INT"),
         PARTICLE("ЧАСТ", "PART"), PREPOSITION("ПРЕДЛ", "PREP"),
         PRONOUN("МС", "PN"), ARTICLE("", "ARTICLE");
 
@@ -233,19 +203,16 @@ class LemmasProcessingServiceImpl implements LemmasProcessingService
         private final String enDesc;
 
 
-        PartOfSpeech(String ruDesc, String enDesc)
-        {
+        PartOfSpeech(String ruDesc, String enDesc) {
             this.ruDesc = ruDesc;
             this.enDesc = enDesc;
         }
 
-        private String getRuDesc()
-        {
+        private String getRuDesc() {
             return ruDesc;
         }
 
-        private String getEnDesc()
-        {
+        private String getEnDesc() {
             return enDesc;
         }
     }

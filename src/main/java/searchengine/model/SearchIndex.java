@@ -15,8 +15,7 @@ import javax.persistence.*;
 @NoArgsConstructor
 @Entity
 @Table(name = "search_index")
-public class SearchIndex
-{
+public class SearchIndex {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false, updatable = false)
@@ -32,8 +31,7 @@ public class SearchIndex
     private float rank; // Ранг леммы на странице
 
 
-    public SearchIndex(int pageId, int lemmaId, float rank)
-    {
+    public SearchIndex(int pageId, int lemmaId, float rank) {
         this.pageId = pageId;
         this.lemmaId = lemmaId;
         this.rank = rank;

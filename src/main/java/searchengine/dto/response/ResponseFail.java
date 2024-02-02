@@ -7,13 +7,11 @@ import lombok.Getter;
  */
 
 @Getter
-public class ResponseFail extends Response
-{
+public class ResponseFail extends Response {
     // Описание ошибки
     private final String error;
 
-    public ResponseFail(boolean result, String error)
-    {
+    public ResponseFail(boolean result, String error) {
         super(result);
         this.error = error;
     }

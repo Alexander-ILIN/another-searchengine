@@ -6,22 +6,25 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import searchengine.Application;
+import searchengine.dto.ResponseWrapper;
 import searchengine.dto.response.Response;
 import searchengine.dto.response.ResponseFail;
 import searchengine.dto.response.ResponseSuccess;
-import searchengine.dto.ResponseWrapper;
 import searchengine.model.Site;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Класс, использующийся для запуска и остановки процесса индексации всех сайтов из конфигурационного файла
  */
 @Service
 @Log4j2
-class IndexingControlServiceImpl implements IndexingControlService
-{
+class IndexingControlServiceImpl implements IndexingControlService {
 
     private final SiteService siteService;
 
@@ -35,29 +38,25 @@ class IndexingControlServiceImpl implements IndexingControlService
 
 
     @Autowired
-    public IndexingControlServiceImpl(SiteService siteService, LoggingService loggingService)
-    {
+    public IndexingControlServiceImpl(SiteService siteService, LoggingService loggingService) {
         this.siteService = siteService;
         this.loggingService = loggingService;
     }
 
     /**
      * Запуск индексации выбранного сайта / всех сайтов из конфигурационного файла
+     *
      * @param siteUrl ссылка на сайт. Если null, то индексируются все сайты
      * @return объект ResponseWrapper: HTTP статус и Response со значением true, если новый процесс индексации был запущен;
      * со значением false, если ещё не закончен текущий процесс индексации
      */
     @Override
-    public ResponseWrapper launchSitesIndexing(String siteUrl)
-    {
+    public ResponseWrapper launchSitesIndexing(String siteUrl) {
         String logMsg;
 
-        if(null == siteUrl)
-        {
+        if (null == siteUrl) {
             logMsg = "Индексация всех сайтов: запуск";
-        }
-        else
-        {
+        } else {
             logMsg = "Индексация сайта " + siteUrl + " : запуск";
         }
 
@@ -67,22 +66,17 @@ class IndexingControlServiceImpl implements IndexingControlService
         Response response;
 
         try {
-            if (!isIndexingInProgress())
-            {
+            if (!isIndexingInProgress()) {
                 startIndexingSitesProcess(siteUrl);
 
                 response = new ResponseSuccess(true);
                 httpStatus = HttpStatus.OK;
 
-            }
-            else
-            {
+            } else {
                 response = new ResponseFail(false, "Индексация уже запущена");
                 httpStatus = HttpStatus.ACCEPTED;
             }
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             response = new ResponseFail(false, "Ошибка при выполнении индексации");
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
             log.error("Индексация: ошибка", ex);
@@ -97,10 +91,10 @@ class IndexingControlServiceImpl implements IndexingControlService
 
     /**
      * Запуск процесса индексации выбранного сайта / всех сайтов из конфигурационного файла
+     *
      * @param siteUrl ссылка на сайт. Если null, то индексируются все сайты
      */
-    private void startIndexingSitesProcess(String siteUrl)
-    {
+    private void startIndexingSitesProcess(String siteUrl) {
         indexingFutureList = new ArrayList<>();
         siteProcessorList = new ArrayList<>();
         executor = Executors.newCachedThreadPool();
@@ -109,8 +103,7 @@ class IndexingControlServiceImpl implements IndexingControlService
 
         ApplicationContext context = Application.getContext();
 
-        for (Site curSite : sites)
-        {
+        for (Site curSite : sites) {
             MappingIndexingService mappingIndexingService =
                     context.getBean(MappingIndexingService.class);
 
@@ -131,40 +124,31 @@ class IndexingControlServiceImpl implements IndexingControlService
 
     /**
      * Остановка процесса индексации
+     *
      * @return объект ResponseWrapper: HTTP статус и Response со значением true, если текущая индексация была остановлена;
      * со значением false, если процесс индексации не удалось остановить
      */
     @Override
-    public ResponseWrapper stopSitesIndexing()
-    {
+    public ResponseWrapper stopSitesIndexing() {
         loggingService.logCustom("Остановка индексации: запуск");
 
         Response response;
         HttpStatus httpStatus;
 
-        try
-        {
-            if (isIndexingInProgress())
-            {
-                if (stopIndexingSitesProcess())
-                {
+        try {
+            if (isIndexingInProgress()) {
+                if (stopIndexingSitesProcess()) {
                     response = new ResponseSuccess(true);
                     httpStatus = HttpStatus.OK;
-                }
-                else
-                {
+                } else {
                     response = new ResponseFail(false, "Не удалось остановить индексацию");
                     httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
                 }
-            }
-            else
-            {
+            } else {
                 response = new ResponseFail(false, "Индексация не запущена");
                 httpStatus = HttpStatus.ACCEPTED;
             }
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             response = new ResponseFail(false, "Ошибка при остановке индексации");
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
             log.error("Остановка индексации: ошибка", ex);
@@ -179,45 +163,40 @@ class IndexingControlServiceImpl implements IndexingControlService
 
     /**
      * Запуск остановки процесса индексации сайтов
+     *
      * @return false, время ожидания остановки индексации истекло; true, если индексация остановлена
      */
-    private boolean stopIndexingSitesProcess()
-    {
+    private boolean stopIndexingSitesProcess() {
         int attemptsQty;
         int maxAttempts = 40;
 
         //Profiling
         long start = System.currentTimeMillis();
 
-        for (MappingIndexingService siteProcessor : siteProcessorList)
-        {
+        for (MappingIndexingService siteProcessor : siteProcessorList) {
             siteProcessor.terminate();
         }
 
         attemptsQty = waitForCompletion(500, maxAttempts);
 
-        if (attemptsQty < maxAttempts)
-        {
+        if (attemptsQty < maxAttempts) {
             //Profiling
             long end = System.currentTimeMillis();
             System.out.println("Terminated " + (end - start) + " ms");
             return true;
-        }
-        else
-        {
+        } else {
             return false;
         }
     }
 
     /**
      * Метод определяет, есть ли незавершённые задачи в списке задач по индексации сайтов (indexingFutureList)
+     *
      * @return true, если в indexingFutureList есть незавершённые задачи; false в обратном случае
      */
     @Override
-    public boolean isIndexingInProgress()
-    {
-        if(indexingFutureList == null)
-        {
+    public boolean isIndexingInProgress() {
+        if (indexingFutureList == null) {
             return false;
         }
 
@@ -228,25 +207,22 @@ class IndexingControlServiceImpl implements IndexingControlService
 
     /**
      * Запуск добавления или обновления отдельной страницы
+     *
      * @param pageUrl ссылка на страницу
      * @return объект ResponseWrapper: HTTP статус и Response со значением true, если страница была успешно обновлена или добавлена;
      * со значением false, если в процессе произошла ошибка
      */
     @Override
-    public ResponseWrapper singlePageIndexing(String pageUrl)
-    {
+    public ResponseWrapper singlePageIndexing(String pageUrl) {
         loggingService.logCustom("Индексация страницы " + pageUrl + " : запуск");
 
         ResponseWrapper responseWrapper;
 
-        if(!isIndexingInProgress())
-        {
+        if (!isIndexingInProgress()) {
             Future<Integer> indexingFuture = startSinglePageIndexingProcess(pageUrl);
 
             responseWrapper = getPageIndexingResponse(indexingFuture);
-        }
-        else
-        {
+        } else {
             Response response = new ResponseFail(false, "Индексация уже запущена");
             HttpStatus httpStatus = HttpStatus.ACCEPTED;
 
@@ -260,11 +236,11 @@ class IndexingControlServiceImpl implements IndexingControlService
 
     /**
      * Запуск процесса индексации отдельной страницы
+     *
      * @param pageUrl ссылка на страницу
      * @return объект Future, содержащий результат индексации страницы
      */
-    private Future<Integer> startSinglePageIndexingProcess(String pageUrl)
-    {
+    private Future<Integer> startSinglePageIndexingProcess(String pageUrl) {
         ApplicationContext context = Application.getContext();
 
         indexingFutureList = new ArrayList<>();
@@ -283,21 +259,17 @@ class IndexingControlServiceImpl implements IndexingControlService
 
     /**
      * Проверка, осуществляется ли процесс индексации и приостановка главного потока
-     * @param sleepTime время в мс
+     *
+     * @param sleepTime   время в мс
      * @param maxAttempts максимальное количество остановок
      * @return количество остановок потока
      */
-    private int waitForCompletion(long sleepTime, int maxAttempts)
-    {
+    private int waitForCompletion(long sleepTime, int maxAttempts) {
         int attemptsQty = 0;
-        while(isIndexingInProgress() && attemptsQty < maxAttempts)
-        {
-            try
-            {
+        while (isIndexingInProgress() && attemptsQty < maxAttempts) {
+            try {
                 Thread.sleep(sleepTime);
-            }
-            catch (InterruptedException e)
-            {
+            } catch (InterruptedException e) {
                 log.error(e);
             }
             ++attemptsQty;
@@ -307,38 +279,31 @@ class IndexingControlServiceImpl implements IndexingControlService
 
     /**
      * Получение результата добавления или обновления отдельной страницы и создание объекта Response
+     *
      * @param indexingFuture объект Future
      * @return Response со значением true, если страница была успешно обновлена или добавлена;
      * со значением false, если в процессе произошла ошибка
      */
-    private ResponseWrapper getPageIndexingResponse(Future<Integer> indexingFuture)
-    {
+    private ResponseWrapper getPageIndexingResponse(Future<Integer> indexingFuture) {
         int maxAttempts = 150;
         Response response = new ResponseFail(false, "Не удалось завершить индексацию страницы");
         HttpStatus httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
 
         int attemptsQty = waitForCompletion(2000, maxAttempts);
 
-        if(attemptsQty < maxAttempts)
-        {
-            try
-            {
+        if (attemptsQty < maxAttempts) {
+            try {
                 int result = indexingFuture.get();
 
-                if(result == 1)
-                {
+                if (result == 1) {
                     response = new ResponseSuccess(true);
                     httpStatus = HttpStatus.OK;
-                }
-                else if(result == 0)
-                {
+                } else if (result == 0) {
                     response = new ResponseFail(false,
                             "Данная страница находится за пределами сайтов, указанных в конфигурационном файле");
                     httpStatus = HttpStatus.BAD_REQUEST;
                 }
-            }
-            catch (Exception ex)
-            {
+            } catch (Exception ex) {
                 log.error("Индексация страницы: ошибка", ex);
             }
         }
@@ -350,18 +315,15 @@ class IndexingControlServiceImpl implements IndexingControlService
 
     /**
      * Получение объекта / объектов Site по ссылке
+     *
      * @param siteUrl ссылка на сайт
      * @return объект / объекты Site. Если входящая ссылка = null, то возвращаются все сайты из БД
      */
-    private Iterable<Site> getSitesForIndexing(String siteUrl)
-    {
+    private Iterable<Site> getSitesForIndexing(String siteUrl) {
         Iterable<Site> sites;
-        if(siteUrl == null)
-        {
+        if (siteUrl == null) {
             sites = siteService.findAll();
-        }
-        else
-        {
+        } else {
             String urlForSearch = UtilService.getUrlWithSlash(siteUrl);
 
             sites = siteService.findByUrl(urlForSearch);

@@ -5,12 +5,12 @@ import searchengine.dto.ResponseWrapper;
 /**
  * интерфейс, использующийся для выполнения поискового запроса пользователя
  */
-public interface SiteSearchService
-{
+public interface SiteSearchService {
     /**
      * обработка поискового запроса от пользователя
-     * @param queryText поисковый запрос
-     * @param siteUrl ссылка на сайт, по которому необходимо осуществить поиск
+     *
+     * @param queryText       поисковый запрос
+     * @param siteUrl         ссылка на сайт, по которому необходимо осуществить поиск
      * @param resultsQtyLimit количество результатов, которое необходимо вывести
      * @return объект ResponseWrapper: HTTP статус и Response, содержащий результат поиска
      */

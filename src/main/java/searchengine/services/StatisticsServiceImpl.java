@@ -4,10 +4,10 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import searchengine.dto.ResponseWrapper;
 import searchengine.dto.response.Response;
 import searchengine.dto.response.ResponseFail;
 import searchengine.dto.response.ResponseStatistics;
-import searchengine.dto.ResponseWrapper;
 import searchengine.dto.statistics.Statistics;
 import searchengine.model.Site;
 
@@ -16,8 +16,7 @@ import searchengine.model.Site;
  */
 @Service
 @Log4j2
-class StatisticsServiceImpl implements StatisticsService
-{
+class StatisticsServiceImpl implements StatisticsService {
     private final SiteService siteService;
 
     private final PageService pageService;
@@ -30,8 +29,7 @@ class StatisticsServiceImpl implements StatisticsService
 
     @Autowired
     public StatisticsServiceImpl(SiteService siteService, PageService pageService, LemmaService lemmaService,
-                                 IndexingControlService indexingControlService, LoggingService loggingService)
-    {
+                                 IndexingControlService indexingControlService, LoggingService loggingService) {
         this.siteService = siteService;
         this.pageService = pageService;
         this.lemmaService = lemmaService;
@@ -41,11 +39,11 @@ class StatisticsServiceImpl implements StatisticsService
 
     /**
      * сбор статистики индексации: общей и по каждому сайту
+     *
      * @return объект ResponseWrapper: HTTP статус и Response содержащий в себе объект Statistics
      */
     @Override
-    public ResponseWrapper getStatistics()
-    {
+    public ResponseWrapper getStatistics() {
         loggingService.logCustom("Получение статистики: запуск");
 
         Response response;
@@ -71,9 +69,7 @@ class StatisticsServiceImpl implements StatisticsService
 
             response = new ResponseStatistics(true, statistics);
             httpStatus = HttpStatus.OK;
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             response = new ResponseFail(false, "Ошибка при получении статистики");
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
             log.error("Получение статистики: ошибка", ex);

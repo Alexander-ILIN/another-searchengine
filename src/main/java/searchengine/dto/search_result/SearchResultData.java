@@ -7,8 +7,7 @@ import searchengine.services.SearchResultProcessor;
  * класс, используемый для хранения данных для ответа на поисковый запрос
  */
 @Getter
-public class SearchResultData
-{
+public class SearchResultData {
     private final String site;      // ссылка на сайт, к которому относится страница
     private final String siteName;  // имя сайта, к которому относится страница
     private final String uri;       // ссылка на страницу
@@ -18,10 +17,10 @@ public class SearchResultData
 
     /**
      * конструктор класса
+     *
      * @param searchResultProcessor объект класса SearchResultProcessor
      */
-    public SearchResultData(SearchResultProcessor searchResultProcessor)
-    {
+    public SearchResultData(SearchResultProcessor searchResultProcessor) {
         this.site = searchResultProcessor.getSiteUrl();
         this.siteName = searchResultProcessor.getSiteName();
         this.uri = searchResultProcessor.getPageUrl();

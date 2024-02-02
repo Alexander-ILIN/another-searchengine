@@ -11,23 +11,21 @@ import searchengine.config.Config;
  */
 @Service
 @Log4j2
-public class LoggingServiceImpl implements LoggingService
-{
+public class LoggingServiceImpl implements LoggingService {
     private final Config config;
 
     @Autowired
-    public LoggingServiceImpl(Config config)
-    {
+    public LoggingServiceImpl(Config config) {
         this.config = config;
     }
 
     /**
      * создание лога с пользовательским уровнем логирования
+     *
      * @param logText текст лога
      */
     @Override
-    public void logCustom(String logText)
-    {
+    public void logCustom(String logText) {
         Level customLevel = Level.getLevel(config.getCustomLoggerName());
         log.log(customLevel, logText);
     }

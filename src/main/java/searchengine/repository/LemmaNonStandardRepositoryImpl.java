@@ -5,6 +5,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import searchengine.config.Config;
 import searchengine.model.Lemma;
+
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import java.util.*;
@@ -16,32 +17,29 @@ import java.util.stream.Collectors;
  */
 @Repository
 @Transactional
-class LemmaNonStandardRepositoryImpl implements LemmaNonStandardRepository
-{
-    private EntityManager entityManager;
+class LemmaNonStandardRepositoryImpl implements LemmaNonStandardRepository {
+    private final EntityManager entityManager;
 
-    private Config config;
+    private final Config config;
 
     @Autowired
-    public LemmaNonStandardRepositoryImpl(EntityManager entityManager, Config config)
-    {
+    public LemmaNonStandardRepositoryImpl(EntityManager entityManager, Config config) {
         this.entityManager = entityManager;
         this.config = config;
     }
 
     /**
      * получение сочетания значение леммы - id леммы
+     *
      * @param lemmaStrings коллекция, содержащая значения лемм (String)
-     * @param siteId id сайта
+     * @param siteId       id сайта
      * @return Map: key = значение леммы (String), value = id леммы в БД (Integer)
      */
     @Override
-    public Map<String, Integer> getLemmasByStrings(Collection<String> lemmaStrings, int siteId)
-    {
+    public Map<String, Integer> getLemmasByStrings(Collection<String> lemmaStrings, int siteId) {
         Map<String, Integer> lemmasMap = new HashMap<>();
 
-        if(lemmaStrings != null && lemmaStrings.size() != 0)
-        {
+        if (lemmaStrings != null && lemmaStrings.size() != 0) {
             Set<String> requestedLemmasStrings = lemmaStrings.stream().collect(Collectors.toSet());
             List<Lemma> savedLemmas = findSaveUpdateLemmasInDB(requestedLemmasStrings, siteId);
             lemmasMap = createLemmasMap(savedLemmas);
@@ -54,12 +52,12 @@ class LemmaNonStandardRepositoryImpl implements LemmaNonStandardRepository
     /**
      * сохранение лемм в БД и получение их списка
      * при сохранении лемм, которые уже существуют в БД обновляется значение частоты, с которой лемма встречается на странице
+     *
      * @param lemmaStrings коллекция, содержащая значения лемм (String)
-     * @param siteId id сайта, к которому относится лемма
+     * @param siteId       id сайта, к которому относится лемма
      * @return список объектов лемм, сохранённых в БД
      */
-    private List<Lemma> findSaveUpdateLemmasInDB(Collection<String> lemmaStrings, int siteId)
-    {
+    private List<Lemma> findSaveUpdateLemmasInDB(Collection<String> lemmaStrings, int siteId) {
         int bufferSize = config.getLemmaBufferSize();
 
         List<Lemma> foundResults = new ArrayList<>();
@@ -72,8 +70,7 @@ class LemmaNonStandardRepositoryImpl implements LemmaNonStandardRepository
         StringJoiner sqlConditionsUpdate = getSqlConditionsUpdate();
         StringJoiner sqlConditionsSelect = getSqlConditionsSelect(siteId);
 
-        for(String currentLemma : lemmaStrings)
-        {
+        for (String currentLemma : lemmaStrings) {
             StringJoiner subCondUpdate = getSubCondUpdate();
             subCondUpdate.add(currentLemma);
             subCondUpdate.add(String.valueOf(siteId));
@@ -83,12 +80,11 @@ class LemmaNonStandardRepositoryImpl implements LemmaNonStandardRepository
             ++bufferCounter;
             ++totalCounter;
 
-            if (bufferCounter >= bufferSize || totalCounter >= lemmasQty)
-            {
+            if (bufferCounter >= bufferSize || totalCounter >= lemmasQty) {
                 Query updateQuery = entityManager.createNativeQuery(sqlConditionsUpdate.toString());
                 Query selectQuery = entityManager.createQuery(sqlConditionsSelect.toString());
                 updateQuery.executeUpdate();
-                List<Lemma> result =  selectQuery.getResultList();
+                List<Lemma> result = selectQuery.getResultList();
                 foundResults.addAll(result);
                 bufferCounter = 0;
                 sqlConditionsUpdate = getSqlConditionsUpdate();
@@ -101,10 +97,10 @@ class LemmaNonStandardRepositoryImpl implements LemmaNonStandardRepository
 
     /**
      * создание объекта StringJoiner, используемого для перечисления лемм в запросе в БД
+     *
      * @return созданный объект StringJoiner
      */
-    private StringJoiner getSubCondUpdate()
-    {
+    private StringJoiner getSubCondUpdate() {
         String condDelimiter = "', ";
         String condPrefix = "'";
         String condSuffix = "";
@@ -114,10 +110,10 @@ class LemmaNonStandardRepositoryImpl implements LemmaNonStandardRepository
 
     /**
      * создание объекта StringJoiner для вставки лемм в БД
+     *
      * @return созданный объект StringJoiner
      */
-    private StringJoiner getSqlConditionsUpdate()
-    {
+    private StringJoiner getSqlConditionsUpdate() {
         String qryDelimiterUpdate = ", 1), (";
         String qryPrefixUpdate = "INSERT INTO lemma (lemma, site_id, frequency) VALUES (";
         String qrySuffixUpdate = ", 1) ON DUPLICATE KEY UPDATE frequency = frequency + 1";
@@ -127,10 +123,10 @@ class LemmaNonStandardRepositoryImpl implements LemmaNonStandardRepository
 
     /**
      * создание объекта StringJoiner для получения лемм из БД
+     *
      * @return созданный объект StringJoiner
      */
-    private StringJoiner getSqlConditionsSelect(int siteId)
-    {
+    private StringJoiner getSqlConditionsSelect(int siteId) {
         String qryDelimiterSelect = "', '";
         String qryPrefixSelect = "FROM Lemma WHERE lemma in ('";
         String qrySuffixSelect = "') AND siteId = " + siteId;
@@ -140,15 +136,14 @@ class LemmaNonStandardRepositoryImpl implements LemmaNonStandardRepository
 
     /**
      * получение сочетания значение леммы - id леммы из списка объектов лемм
+     *
      * @param lemmas список объектов лемм
      * @return Map: key = значение леммы (String), value = id леммы в БД (Integer)
      */
-    private Map<String, Integer> createLemmasMap (List<Lemma> lemmas)
-    {
+    private Map<String, Integer> createLemmasMap(List<Lemma> lemmas) {
         Map<String, Integer> foundLemmasMap = new HashMap<>();
 
-        for (Lemma currentLemma : lemmas)
-        {
+        for (Lemma currentLemma : lemmas) {
 
             foundLemmasMap.put(currentLemma.getLemma(), currentLemma.getId());
         }
@@ -158,13 +153,13 @@ class LemmaNonStandardRepositoryImpl implements LemmaNonStandardRepository
 
     /**
      * Поиск объектов лемм в БД по значениям (String) и id сайта (int)
+     *
      * @param lemmaStrings значения лемм
-     * @param siteId id сайта
+     * @param siteId       id сайта
      * @return список объектов лемм, удовлетворяющих входным параметрам
      */
     @Override
-    public List<Lemma> findLemmas(Collection<String> lemmaStrings, int siteId)
-    {
+    public List<Lemma> findLemmas(Collection<String> lemmaStrings, int siteId) {
         StringBuilder sqlQry = new StringBuilder();
 
         String qryDelimiterSelect = "', '";
@@ -172,15 +167,13 @@ class LemmaNonStandardRepositoryImpl implements LemmaNonStandardRepository
         String qrySuffixSelect = "')";
 
         StringJoiner sqlConditionsSelect = new StringJoiner(qryDelimiterSelect, qryPrefixSelect, qrySuffixSelect);
-        for(String currentLemma : lemmaStrings)
-        {
+        for (String currentLemma : lemmaStrings) {
             sqlConditionsSelect.add(currentLemma);
         }
 
         sqlQry.append(sqlConditionsSelect.toString());
 
-        if(siteId != -1)
-        {
+        if (siteId != -1) {
             sqlQry.append(" AND siteId = ");
             sqlQry.append(siteId);
         }
@@ -188,23 +181,23 @@ class LemmaNonStandardRepositoryImpl implements LemmaNonStandardRepository
         sqlQry.append(" ORDER BY frequency");
 
         Query selectQuery = entityManager.createQuery(sqlQry.toString());
-        List<Lemma> result =  selectQuery.getResultList();
+        List<Lemma> result = selectQuery.getResultList();
 
         return result;
     }
 
     /**
      * удаление всех лемм, относящихся к сайту с указанным id
+     *
      * @param siteId id сайта
      */
     @Override
-    public void deleteBySiteId(int siteId)
-    {
+    public void deleteBySiteId(int siteId) {
         StringBuilder sqlQry = new StringBuilder();
         sqlQry.append("DELETE FROM Lemma WHERE siteId = ");
         sqlQry.append(siteId);
 
         Query deleteQuery = entityManager.createQuery(sqlQry.toString());
-        int result =  deleteQuery.executeUpdate();
+        int result = deleteQuery.executeUpdate();
     }
 }

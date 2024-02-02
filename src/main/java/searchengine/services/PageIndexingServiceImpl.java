@@ -18,15 +18,14 @@ import java.util.stream.Collectors;
  */
 @Service
 @Scope("prototype")
-class PageIndexingServiceImpl implements PageIndexingService
-{
-    private LemmasProcessingService lemmasProcessingService;
+class PageIndexingServiceImpl implements PageIndexingService {
+    private final LemmasProcessingService lemmasProcessingService;
 
-    private LemmaService lemmaService;
+    private final LemmaService lemmaService;
 
-    private SearchIndexService searchIndexService;
+    private final SearchIndexService searchIndexService;
 
-    private Config config;
+    private final Config config;
 
     @Autowired
     public PageIndexingServiceImpl(LemmasProcessingService lemmasProcessingService, LemmaService lemmaService,
@@ -39,12 +38,12 @@ class PageIndexingServiceImpl implements PageIndexingService
 
     /**
      * запуск индексации страницы
+     *
      * @param page - экземпляр класса Page, который необходимо проиндексировать
      */
     @Override
-    public void indexPage(Page page)
-    {
-        Map <String, Integer> rankedPageLemmasMap;
+    public void indexPage(Page page) {
+        Map<String, Integer> rankedPageLemmasMap;
 
         String content = page.getPageContent();
         Document htmlDocument = Jsoup.parse(content);
@@ -60,11 +59,11 @@ class PageIndexingServiceImpl implements PageIndexingService
      * удаление / обновление информации при обновлении отдельной страницы
      * поиск и удаление объектов SearchIndex по pageId;
      * поиск лемм по объектам SearchIndex
+     *
      * @param page страница
      */
     @Override
-    public void deletePageIndexData(Page page)
-    {
+    public void deletePageIndexData(Page page) {
         int pageId = page.getId();
 
         List<SearchIndex> pageSearchIndexes = searchIndexService.findByPageId(pageId);
@@ -78,11 +77,11 @@ class PageIndexingServiceImpl implements PageIndexingService
 
     /**
      * удаление данных, относящихся к сайту, из таблиц: lemma, index
+     *
      * @param siteId id сайта, данные о котором необходимо удалить
      */
     @Override
-    public void removeSiteIndexData(int siteId)
-    {
+    public void removeSiteIndexData(int siteId) {
         searchIndexService.deleteBySiteId(siteId);
         lemmaService.deleteBySiteId(siteId);
     }
@@ -91,37 +90,31 @@ class PageIndexingServiceImpl implements PageIndexingService
      * обновление / удаление лемм:
      * если частота встречаемости леммы равна 1, то лемма удаляется из базы данных;
      * если частота встречаемости леммы больше 1, то значение частоты уменьшается на 1
+     *
      * @param lemmasId список id лемм, встречающихся на обновляемой странице
      */
-    private void modifyOrRemoveLemmas(List<Integer> lemmasId)
-    {
+    private void modifyOrRemoveLemmas(List<Integer> lemmasId) {
         int bufferSize = config.getLemmaBufferSize();
         List<Lemma> lemmasBuffer = new ArrayList<>();
         int lemmasCounter = 0;
 
         Iterable<Lemma> affectedLemmas = lemmaService.findAllById(lemmasId);
 
-        if(affectedLemmas == null)
-        {
+        if (affectedLemmas == null) {
             return;
         }
 
-        for(Lemma curLemma : affectedLemmas)
-        {
+        for (Lemma curLemma : affectedLemmas) {
             int frequency = curLemma.getFrequency();
 
-            if(frequency == 1)
-            {
+            if (frequency == 1) {
                 lemmaService.delete(curLemma);
-            }
-            else
-            {
+            } else {
                 curLemma.setFrequency(--frequency);
                 lemmasBuffer.add(curLemma);
                 ++lemmasCounter;
             }
-            if(lemmasCounter >= bufferSize)
-            {
+            if (lemmasCounter >= bufferSize) {
                 lemmaService.saveAll(lemmasBuffer);
                 lemmasBuffer.clear();
                 lemmasCounter = 0;
@@ -133,27 +126,24 @@ class PageIndexingServiceImpl implements PageIndexingService
 
     /**
      * создание Map, содержащего леммы, встречающиеся на странице и их ранги
+     *
      * @param htmlDocument
      * @return Map, содержащий леммы, встречающиеся на странице и их ранги
      */
-    private Map<String, Integer> createRankedPageLemmasMap(Document htmlDocument)
-    {
-        Map <String, Integer> rankedPageLemmasMap = new HashMap<>();
+    private Map<String, Integer> createRankedPageLemmasMap(Document htmlDocument) {
+        Map<String, Integer> rankedPageLemmasMap = new HashMap<>();
 
         List<String> currentHtmlElementsTexts = htmlDocument.select("title, body").eachText();
 
-        for(String htmlElementText : currentHtmlElementsTexts)
-        {
+        for (String htmlElementText : currentHtmlElementsTexts) {
             Map<String, Integer> lemmasMap = lemmasProcessingService.getTextLemmasWithFreq(htmlElementText);
 
-            for(Map.Entry<String, Integer> lemmaEntry : lemmasMap.entrySet())
-            {
+            for (Map.Entry<String, Integer> lemmaEntry : lemmasMap.entrySet()) {
                 String currentLemma = lemmaEntry.getKey();
                 Integer currentRank = lemmaEntry.getValue();
                 Integer newRank = rankedPageLemmasMap.
                         computeIfPresent(currentLemma, (key, val) -> val + currentRank);
-                if(newRank == null)
-                {
+                if (newRank == null) {
                     rankedPageLemmasMap.put(currentLemma, currentRank);
                 }
             }
@@ -164,37 +154,35 @@ class PageIndexingServiceImpl implements PageIndexingService
 
     /**
      * вычисление ранга леммы для текущего поля
-     * @param lemmasMap Map с леммами слов, встречающихся на странице и их количествами на странице
+     *
+     * @param lemmasMap   Map с леммами слов, встречающихся на странице и их количествами на странице
      * @param fieldWeight релевантность (вес) текущего поля
      * @return Map, содержащий лемму и её ранг для текущего поля
      */
-    private Map<String, Float> getRankedLemmasMap(Map<String, Integer> lemmasMap, float fieldWeight)
-    {
+    private Map<String, Float> getRankedLemmasMap(Map<String, Integer> lemmasMap, float fieldWeight) {
         Map<String, Float> rankedLemmasMap = new HashMap<>();
-        for(String lemma : lemmasMap.keySet())
-        {
+        for (String lemma : lemmasMap.keySet()) {
             float lemmaRank = lemmasMap.get(lemma) * fieldWeight;
-            rankedLemmasMap.put(lemma,lemmaRank);
+            rankedLemmasMap.put(lemma, lemmaRank);
         }
         return rankedLemmasMap;
     }
 
     /**
      * сохранение в БД лемм и индексов страниц
+     *
      * @param rankedPageLemmasMap Map, содержащий леммы, встречающиеся на странице и их ранги
-     * @param pageId ID страницы
+     * @param pageId              ID страницы
      */
-    private void saveLemmasAndIndex (Map <String, Integer> rankedPageLemmasMap, int pageId, int siteId)
-    {
+    private void saveLemmasAndIndex(Map<String, Integer> rankedPageLemmasMap, int pageId, int siteId) {
         // Profiling
         long start = System.currentTimeMillis();
-        Set <SearchIndex> searchIndexSet = new HashSet<>();
+        Set<SearchIndex> searchIndexSet = new HashSet<>();
 
         Map<String, Integer> lemmasMap = lemmaService.
                 getLemmasByStrings(rankedPageLemmasMap.keySet(), siteId);
 
-        try
-        {
+        try {
 
             // Profiling
             long lemmasSaved = System.currentTimeMillis();
@@ -210,9 +198,7 @@ class PageIndexingServiceImpl implements PageIndexingService
             long indexSaved = System.currentTimeMillis();
             System.out.println("page " + pageId + " index saved " + (indexSaved - indexPrepared) + " ms");
 
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             System.out.println(e.getMessage() + " on page ID = " + pageId);
             return;
         }

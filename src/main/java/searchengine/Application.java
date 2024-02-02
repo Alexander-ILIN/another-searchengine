@@ -6,8 +6,7 @@ import org.springframework.context.ApplicationContext;
 import searchengine.services.InitService;
 
 @SpringBootApplication
-public class Application
-{
+public class Application {
     private static ApplicationContext context;
 
     public static void main(String[] args) {
@@ -17,8 +16,7 @@ public class Application
         initService.verifyConfigVsDbSites();
     }
 
-    public static ApplicationContext getContext()
-    {
+    public static ApplicationContext getContext() {
         return context;
     }
 }

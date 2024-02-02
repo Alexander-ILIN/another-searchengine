@@ -20,19 +20,18 @@ import java.util.concurrent.RecursiveAction;
  * класс, использующийся для запуска ForkJoinTask
  */
 @Log4j2
-class LinkProcessor extends RecursiveAction
-{
+class LinkProcessor extends RecursiveAction {
+    public static final String URL_CHECK_REGEX_1 = ".+((/#)|(\\?)).*";   // проверка наличия в ссылке символов "#" и "?"
     private final String url;                     // ссылка на текущую страницу
     private final AuxSiteData auxSiteData;                 // экземпляр класса AuxSiteData. Содержит информацию о сайте, карту которого необходимо создать
-    public static final String URL_CHECK_REGEX_1 = ".+((/#)|(\\?)).*";   // проверка наличия в ссылке символов "#" и "?"
 
     /**
      * конструктор класса
-     * @param url ссылка на страницу
+     *
+     * @param url         ссылка на страницу
      * @param auxSiteData - сайт, к которому относится страница
      */
-    public LinkProcessor(String url, AuxSiteData auxSiteData)
-    {
+    public LinkProcessor(String url, AuxSiteData auxSiteData) {
         this.url = url;
         this.auxSiteData = auxSiteData;
     }
@@ -41,10 +40,8 @@ class LinkProcessor extends RecursiveAction
      * переопределение метода compute родительского класса RecursiveAction
      */
     @Override
-    protected void compute()
-    {
-        if(auxSiteData.isTerminated())
-        {
+    protected void compute() {
+        if (auxSiteData.isTerminated()) {
             return;
         }
 
@@ -52,85 +49,76 @@ class LinkProcessor extends RecursiveAction
         List<LinkProcessor> tasksList = new ArrayList<>(); // список заданий для запуска ForkJoinTask
 
         try {
-                // получение сета ссылок текущей страницы
-                allPageLinks = getAllPageLinks(url, auxSiteData);
+            // получение сета ссылок текущей страницы
+            allPageLinks = getAllPageLinks(url, auxSiteData);
 
-                for (String currentLink : allPageLinks) {
-                    // проверка, использовалась ли уже ссылка для запуска ForkJoinTask
-                    if (!auxSiteData.isUrlChecked(currentLink))
-                    {
-                        auxSiteData.addCheckedUrl(currentLink);
-                        LinkProcessor task = new LinkProcessor(currentLink, auxSiteData);
-                        tasksList.add(task);
-                    }
+            for (String currentLink : allPageLinks) {
+                // проверка, использовалась ли уже ссылка для запуска ForkJoinTask
+                if (!auxSiteData.isUrlChecked(currentLink)) {
+                    auxSiteData.addCheckedUrl(currentLink);
+                    LinkProcessor task = new LinkProcessor(currentLink, auxSiteData);
+                    tasksList.add(task);
                 }
+            }
 
-                ForkJoinTask.invokeAll(tasksList);
+            ForkJoinTask.invokeAll(tasksList);
 
-                System.out.println("Site #" + auxSiteData.getSiteId() + ": " + auxSiteData.getCheckedUrlsQty() + " pages have been proceeded...");
-        }
-        catch (Exception e)
-        {
+            System.out.println("Site #" + auxSiteData.getSiteId() + ": " + auxSiteData.getCheckedUrlsQty() + " pages have been proceeded...");
+        } catch (Exception e) {
             log.warn(e);
         }
     }
 
     /**
      * получение информации о странице: статус ответа, содержимое, список ссылок. Запуск записи информации о странице в БД.
-     * @param currentUrl - ссылка на страницу
+     *
+     * @param currentUrl  - ссылка на страницу
      * @param auxSiteData - сайт, к которому относится страница
      * @return
      * @throws InterruptedException
      * @throws IOException
      */
-    private Set<String> getAllPageLinks (String currentUrl, AuxSiteData auxSiteData) throws Exception
-    {
+    private Set<String> getAllPageLinks(String currentUrl, AuxSiteData auxSiteData) throws Exception {
         String rootUrl;
         Elements elementsWithLinks;
-        
+
         Set<String> allPageLinks = new TreeSet<>();
         rootUrl = auxSiteData.getRootUrl();
-        
+
         Document htmlDocument = getAndSavePageData(currentUrl);
 
         elementsWithLinks = htmlDocument.select("a[href]");
 
-        for (Element element : elementsWithLinks)
-        {
+        for (Element element : elementsWithLinks) {
             String link = element.attr("href");
 
-            if (!link.matches(URL_CHECK_REGEX_1 ))
-            {
-                if (link.startsWith(rootUrl))
-                {
+            if (!link.matches(URL_CHECK_REGEX_1)) {
+                if (link.startsWith(rootUrl)) {
                     allPageLinks.add(link);
-                }
-                else if (link.startsWith("/"))
-                {
+                } else if (link.startsWith("/")) {
                     allPageLinks.add(rootUrl + link);
                 }
             }
         }
-            
+
         return allPageLinks;
     }
 
     /**
      * получение кода ответа, body страницы и запуск их записи в базу данных
+     *
      * @param url ссылка на страницу
      * @return HTML документ страницы
      * @throws Exception
      */
-    public Document getAndSavePageData(String url) throws Exception
-    {
+    public Document getAndSavePageData(String url) throws Exception {
         Connection.Response response;
         int responseCode;
         String body;
         Document htmlDocument = new Document("");
         String exceptionMessage = null;
-        
-        try
-        {
+
+        try {
             String userAgent = this.auxSiteData.getUserAgent();
             String referrer = this.auxSiteData.getReferrer();
             response = Jsoup.connect(url).userAgent(userAgent).referrer(referrer).maxBodySize(0).execute();
@@ -142,9 +130,7 @@ class LinkProcessor extends RecursiveAction
             htmlDocument = response.parse();
 
             body = htmlDocument.toString();
-        }
-        catch (HttpStatusException ex)
-        {
+        } catch (HttpStatusException ex) {
             responseCode = ex.getStatusCode();
             body = "";
             exceptionMessage = ex.getMessage();
@@ -155,8 +141,7 @@ class LinkProcessor extends RecursiveAction
         SiteMappingService siteMappingService = this.auxSiteData.getSiteMapper();
         siteMappingService.proceedWithPageData(pageUrl, responseCode, body, auxSiteData.getSiteId());
 
-        if(null != exceptionMessage)
-        {
+        if (null != exceptionMessage) {
             throw new Exception(exceptionMessage);
         }
 
@@ -165,18 +150,15 @@ class LinkProcessor extends RecursiveAction
 
     /**
      * получение ссылки на страницу от корня сайта
+     *
      * @param fullPageUrl полная ссылка на страницу (начинается с ссылки на сайт)
      * @return ссылка на страницу от корня сайта
      */
-    private String getPageUrlFromRoot(String fullPageUrl)
-    {
+    private String getPageUrlFromRoot(String fullPageUrl) {
         String pageUrl;
-        if(fullPageUrl.equals(auxSiteData.getRootUrl()))
-        {
+        if (fullPageUrl.equals(auxSiteData.getRootUrl())) {
             pageUrl = "/";
-        }
-        else
-        {
+        } else {
             pageUrl = fullPageUrl.substring(auxSiteData.getRootUrlLen());
         }
 
