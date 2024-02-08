@@ -1,0 +1,10 @@
+FROM openjdk:13-jdk
+
+ARG JAR_FILE=target/SearchEngine-1.0-SNAPSHOT.jar
+ARG APP_FILE=application.yaml
+ARG APP_DIR=/usr/searchengine
+COPY ${JAR_FILE} /${APP_DIR}/SearchEngine.jar
+COPY ${APP_FILE} /${APP_DIR}/application.yaml
+EXPOSE 8080
+WORKDIR ${APP_DIR}
+ENTRYPOINT ["java","-jar","SearchEngine.jar"]
