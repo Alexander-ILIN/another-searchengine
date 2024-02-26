@@ -16,7 +16,8 @@ import java.util.*;
 @Setter
 @Getter
 public class SearchResultProcessor {
-    private static List<SearchResultProcessor> searchResultProcessorList = new ArrayList<>();             // список всех созданных объектов класса SearchResultProcessor для всех сайтов
+    private static List<SearchResultProcessor> allSearchResultProcessorList = new ArrayList<>();          // список всех созданных объектов класса SearchResultProcessor для всех сайтов
+    private static List<SearchResultProcessor> searchResultProcessorList = new ArrayList<>();             // список всех объектов класса SearchResultProcessor для отображения на текущей странице
     private static Map<Integer, SearchResultProcessor> siteSearchResultMap = new HashMap<>();    // Map, Key = id страницы, value = объект класса SearchResultProcessor, относящийся к странице для одного сайта
     private static float maxRelevance = 0f;     // максимальная относительная релевантность
     private final int pageId;                   // id страницы, к которой относится данный объект класса SearchResultProcessor
@@ -48,12 +49,12 @@ public class SearchResultProcessor {
     }
 
     /**
-     * добавление объекта класса SearchResultProcessor в searchResultProcessorList
+     * добавление объекта класса SearchResultProcessor в allSearchResultProcessorList
      *
      * @param searchResultProcessor объект класса SearchResultProcessor
      */
     public static void addSearchResult(SearchResultProcessor searchResultProcessor) {
-        searchResultProcessorList.add(searchResultProcessor);
+        allSearchResultProcessorList.add(searchResultProcessor);
     }
 
     /**
@@ -77,7 +78,7 @@ public class SearchResultProcessor {
      * очистка searchResultProcessorList и обнуление максимальной относительной релевантности
      */
     public static void clearResults() {
-        searchResultProcessorList.clear();
+        allSearchResultProcessorList.clear();
         maxRelevance = 0.0f;
     }
 
@@ -92,19 +93,22 @@ public class SearchResultProcessor {
      * ограничение количества результатов поиска в соответствии с параметром поискового запроса
      *
      * @param resultsQtyLimit
+     * @param outputOffset
      */
-    public static void limitResults(int resultsQtyLimit) {
-        if (searchResultProcessorList.size() > resultsQtyLimit) {
-            List<SearchResultProcessor> limitedList = searchResultProcessorList.subList(0, resultsQtyLimit);
-            searchResultProcessorList = limitedList;
-        }
+    public static void limitResults(Integer outputOffset, Integer resultsQtyLimit) {
+
+        int upperBoundaryCalc = outputOffset + resultsQtyLimit;
+
+        int upperBoundary = Math.min(upperBoundaryCalc, allSearchResultProcessorList.size());
+
+        searchResultProcessorList = allSearchResultProcessorList.subList(outputOffset, upperBoundary);
     }
 
     /**
      * запуск расчёта и заполнения относительных релевантностей страниц для всех объектов SearchResultProcessor
      */
     private static void calculateRelRelevance() {
-        searchResultProcessorList.stream().forEach(searchResultProcessor ->
+        allSearchResultProcessorList.stream().forEach(searchResultProcessor ->
                 searchResultProcessor.setRelRelevance(searchResultProcessor.getAbsRelevance() / SearchResultProcessor.getMaxRelevance()));
     }
 
@@ -115,7 +119,7 @@ public class SearchResultProcessor {
     public static void generateSortedTotalResults() {
         calculateRelRelevance();
 
-        searchResultProcessorList.sort(Comparator.comparing((SearchResultProcessor searchResultProcessor) ->
+        allSearchResultProcessorList.sort(Comparator.comparing((SearchResultProcessor searchResultProcessor) ->
                 searchResultProcessor.getRelRelevance()).reversed());
     }
 
@@ -149,6 +153,10 @@ public class SearchResultProcessor {
             String title = (titles.size() == 0) ? "" : titles.get(0);
             searchResultProcessor.setTitle(title);
         }
+    }
+
+    public static List<SearchResultProcessor> getAllSearchResultProcessorList() {
+        return allSearchResultProcessorList;
     }
 
     public static List<SearchResultProcessor> getSearchResultList() {

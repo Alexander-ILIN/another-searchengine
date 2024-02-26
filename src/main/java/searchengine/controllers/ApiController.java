@@ -51,9 +51,9 @@ public class ApiController {
     @GetMapping("/search")
     public ResponseEntity<Response> search(@RequestParam(name = "query") String queryText,
                                            @RequestParam(required = false, name = "site") String siteUrl,
-                                           @RequestParam(name = "offset") int outputOffset,
-                                           @RequestParam(name = "limit") int resultsQtyLimit) {
-        ResponseWrapper responseWrapper = siteSearchService.searchSites(queryText, siteUrl, resultsQtyLimit);
+                                           @RequestParam(name = "offset") Integer outputOffset,
+                                           @RequestParam(name = "limit") Integer resultsQtyLimit) {
+        ResponseWrapper responseWrapper = siteSearchService.searchSites(queryText, siteUrl, outputOffset, resultsQtyLimit);
 
         return ResponseEntity.status(responseWrapper.getHttpStatus()).body(responseWrapper.getResponse());
     }

@@ -11,8 +11,9 @@ public interface SiteSearchService {
      *
      * @param queryText       поисковый запрос
      * @param siteUrl         ссылка на сайт, по которому необходимо осуществить поиск
-     * @param resultsQtyLimit количество результатов, которое необходимо вывести
+     * @param outputOffset    количество результатов, которые необходимо пропустить
+     * @param resultsQtyLimit количество результатов на одной странице
      * @return объект ResponseWrapper: HTTP статус и Response, содержащий результат поиска
      */
-    ResponseWrapper searchSites(String queryText, String siteUrl, int resultsQtyLimit);
+    ResponseWrapper searchSites(String queryText, String siteUrl, Integer outputOffset, Integer resultsQtyLimit);
 }

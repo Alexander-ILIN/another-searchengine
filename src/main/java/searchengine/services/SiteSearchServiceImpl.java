@@ -60,11 +60,12 @@ class SiteSearchServiceImpl implements SiteSearchService {
      *
      * @param queryText       поисковый запрос
      * @param siteUrl         ссылка на сайт, по которому необходимо осуществить поиск
-     * @param resultsQtyLimit количество результатов, которое необходимо вывести
+     * @param outputOffset    количество результатов, которые необходимо пропустить
+     * @param resultsQtyLimit количество результатов на одной странице
      * @return объект ResponseWrapper: HTTP статус и Response, содержащий результат поиска
      */
     @Override
-    public ResponseWrapper searchSites(String queryText, String siteUrl, int resultsQtyLimit) {
+    public ResponseWrapper searchSites(String queryText, String siteUrl, Integer outputOffset, Integer resultsQtyLimit) {
         logOnSearchStart(queryText, siteUrl);
 
         Response response;
@@ -75,8 +76,8 @@ class SiteSearchServiceImpl implements SiteSearchService {
                 response = new ResponseFail(false, "Задан пустой поисковый запрос");
                 httpStatus = HttpStatus.BAD_REQUEST;
             } else {
-                SearchResultData[] resultData = getSearchResults(queryText, siteUrl, resultsQtyLimit);
-                response = new ResponseSearch(true, resultData.length, resultData);
+                SearchResultData[] resultData = getSearchResults(queryText, siteUrl, outputOffset, resultsQtyLimit);
+                response = new ResponseSearch(true, SearchResultProcessor.getAllSearchResultProcessorList().size(), resultData);
                 httpStatus = HttpStatus.OK;
             }
         } catch (IOException ioEx) {
@@ -118,33 +119,38 @@ class SiteSearchServiceImpl implements SiteSearchService {
      *
      * @param queryText       строка, содержащая поисковый запрос
      * @param siteUrl         ссылка на сайт, по которому необходимо выполнить поиск
-     * @param resultsQtyLimit количество результатов, которое необходимо вывести
+     * @param outputOffset    количество результатов, которые необходимо пропустить
+     * @param resultsQtyLimit количество результатов на одной странице
      * @return массив объектов SearchResultData, который впоследствии используется для вывода результата поиска пользователю
      * @throws IOException исключение, если отсутствуют проиндексированные сайты
      */
-    public SearchResultData[] getSearchResults(String queryText, String siteUrl, int resultsQtyLimit) throws IOException {
-        SearchResultProcessor.clearResults();
-
-        Set<Site> siteSet;
-
-        if (siteUrl == null) {
-            siteSet = getValidSites();
-        } else {
-            Site singleSite = getSite(siteUrl);
-
-            siteSet = new HashSet<>();
-            siteSet.add(singleSite);
-        }
+    public SearchResultData[] getSearchResults(String queryText, String siteUrl, Integer outputOffset, Integer resultsQtyLimit) throws IOException {
 
         Set<String> lemmasSet = lemmasProcessingService.getTextLemmas(queryText);
 
-        for (Site curSite : siteSet) {
-            getSiteSearchResults(lemmasSet, curSite);
+        if (outputOffset == 0) {
+            SearchResultProcessor.clearResults();
+
+            Set<Site> siteSet;
+
+            if (siteUrl == null) {
+                siteSet = getValidSites();
+            } else {
+                Site singleSite = getSite(siteUrl);
+
+                siteSet = new HashSet<>();
+                siteSet.add(singleSite);
+            }
+
+
+            for (Site curSite : siteSet) {
+                getSiteSearchResults(lemmasSet, curSite);
+            }
+
+            SearchResultProcessor.generateSortedTotalResults();
         }
 
-        SearchResultProcessor.generateSortedTotalResults();
-
-        SearchResultProcessor.limitResults(resultsQtyLimit);
+        SearchResultProcessor.limitResults(outputOffset, resultsQtyLimit);
 
         addPagesData();
 
@@ -171,6 +177,10 @@ class SiteSearchServiceImpl implements SiteSearchService {
         SearchResultProcessor.clearSiteSearchResult();
 
         List<Lemma> lemmas = lemmaService.findLemmas(lemmasSet, site.getId());
+
+        if (lemmasSet.size() != lemmas.size()) {
+            return;
+        }
 
         long pagesQty = pageService.countAllBySiteId(site.getId());
 
